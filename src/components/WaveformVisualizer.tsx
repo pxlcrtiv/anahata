@@ -14,130 +14,94 @@ interface WaveformVisualizerProps {
   };
   isPlaying: boolean;
   masterVolume: number;
+  getWaveformData: () => { left: Uint8Array | null; right: Uint8Array | null };
 }
 
 const WaveformVisualizer: React.FC<WaveformVisualizerProps> = ({
   leftChannel,
   rightChannel,
   isPlaying,
-  masterVolume
+  masterVolume,
+  getWaveformData
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
-  const timeRef = useRef(0);
+  const isPlayingRef = useRef(isPlaying);
+  isPlayingRef.current = isPlaying;
 
-  const generateWaveform = (
-    frequency: number,
-    waveform: string,
-    amplitude: number,
-    time: number,
-    samples: number
+  const drawFromData = (
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    centerY: number,
+    data: Uint8Array | null,
+    color: string,
+    flip: boolean
   ) => {
-    const points = [];
-    for (let i = 0; i < samples; i++) {
-      const x = (i / samples) * 8 * Math.PI; // More cycles for better visualization
-      const t = time * 0.005 + x / Math.max(frequency / 100, 1); // Better time scaling
-      let y = 0;
+    const baseline = flip ? centerY + centerY * 0.5 : centerY - centerY * 0.5;
+    const halfHeight = centerY * 0.45;
 
-      switch (waveform) {
-        case 'sine':
-          y = Math.sin(t * frequency / 50);
-          break;
-        case 'square':
-          y = Math.sign(Math.sin(t * frequency / 50));
-          break;
-        case 'triangle':
-          y = (2 / Math.PI) * Math.asin(Math.sin(t * frequency / 50));
-          break;
-        case 'sawtooth':
-          const period = (2 * Math.PI) / (frequency / 50);
-          y = 2 * ((t % period) / period - 0.5);
-          break;
-        default:
-          y = Math.sin(t * frequency / 50);
-      }
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.globalAlpha = 1;
 
-      points.push(y * amplitude * masterVolume);
+    if (!data) {
+      // No live signal yet (e.g. paused) — draw a flat line.
+      ctx.moveTo(0, baseline);
+      ctx.lineTo(width, baseline);
+      ctx.stroke();
+      return;
     }
-    return points;
+
+    const len = data.length;
+    for (let i = 0; i < len; i++) {
+      const x = (i / (len - 1)) * width;
+      // Byte data is centered at 128; map 0..255 -> -1..1.
+      const v = (data[i] - 128) / 128;
+      const y = flip ? baseline + v * halfHeight : baseline - v * halfHeight;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
   };
 
-  const drawWaveform = (time: number) => {
+  const render = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const rect = canvas.getBoundingClientRect();
     const { width, height } = canvas;
-    
-    // Clear canvas
     ctx.clearRect(0, 0, width, height);
-
-    const samples = Math.floor(width / 2); // Reduce samples for better performance
     const centerY = height / 2;
-    
-    try {
-      const leftWave = generateWaveform(leftChannel.frequency, leftChannel.waveform, leftChannel.amplitude, time, samples);
-      const rightWave = generateWaveform(rightChannel.frequency, rightChannel.waveform, rightChannel.amplitude, time, samples);
 
-      // Draw left channel (top half) - Much thicker lines
-      ctx.beginPath();
-      ctx.strokeStyle = isPlaying ? '#06b6d4' : '#64748b';
-      ctx.lineWidth = 4; // Increased from 2 to 4
-      ctx.lineCap = 'round'; // Rounded line caps for better appearance
-      ctx.lineJoin = 'round'; // Rounded line joins
-      ctx.globalAlpha = isPlaying ? 1 : 0.5;
+    const { left, right } = getWaveformData();
+    drawFromData(ctx, width, centerY, left, isPlaying ? '#06b6d4' : '#64748b', false);
+    drawFromData(ctx, width, centerY, right, isPlaying ? '#f59e0b' : '#64748b', true);
 
-      for (let i = 0; i < samples; i++) {
-        const x = (i / samples) * width;
-        const y = centerY - (leftWave[i] * (centerY * 0.7));
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
+    // Center divider
+    ctx.beginPath();
+    ctx.strokeStyle = '#374151';
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.4;
+    ctx.moveTo(0, centerY);
+    ctx.lineTo(width, centerY);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
 
-      // Draw right channel (bottom half) - Much thicker lines
-      ctx.beginPath();
-      ctx.strokeStyle = isPlaying ? '#f59e0b' : '#64748b';
-      ctx.lineWidth = 4; // Increased from 2 to 4
-      ctx.lineCap = 'round'; // Rounded line caps for better appearance
-      ctx.lineJoin = 'round'; // Rounded line joins
-
-      for (let i = 0; i < samples; i++) {
-        const x = (i / samples) * width;
-        const y = centerY + (rightWave[i] * (centerY * 0.7));
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-
-      // Draw center line - Slightly thicker
-      ctx.beginPath();
-      ctx.strokeStyle = '#374151';
-      ctx.lineWidth = 2; // Increased from 1 to 2
-      ctx.globalAlpha = 0.3;
-      ctx.moveTo(0, centerY);
-      ctx.lineTo(width, centerY);
-      ctx.stroke();
-
-      // Draw frequency labels with better positioning and styling
-      ctx.globalAlpha = 1;
-      ctx.font = 'bold 14px Inter, sans-serif'; // Made font bold and slightly larger
-      ctx.fillStyle = '#06b6d4';
-      ctx.fillText(`L: ${leftChannel.frequency}Hz ${leftChannel.waveform}`, 16, 28);
-      ctx.fillStyle = '#f59e0b';
-      ctx.fillText(`R: ${rightChannel.frequency}Hz ${rightChannel.waveform}`, 16, height - 16);
-    } catch (error) {
-      console.error('Error drawing waveform:', error);
-    }
+    // Labels
+    ctx.font = 'bold 14px Inter, sans-serif';
+    ctx.fillStyle = '#06b6d4';
+    ctx.fillText(`L: ${leftChannel.frequency}Hz ${leftChannel.waveform}`, 16, 28);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillText(`R: ${rightChannel.frequency}Hz ${rightChannel.waveform}`, 16, height - 16);
   };
 
-  const animate = (currentTime: number) => {
-    if (isPlaying) {
-      timeRef.current = currentTime;
-      drawWaveform(currentTime);
+  const animate = () => {
+    if (isPlayingRef.current) {
+      render();
       animationRef.current = requestAnimationFrame(animate);
     }
   };
@@ -146,18 +110,20 @@ const WaveformVisualizer: React.FC<WaveformVisualizerProps> = ({
     if (isPlaying) {
       animationRef.current = requestAnimationFrame(animate);
     } else {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-      drawWaveform(timeRef.current);
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      // Draw last captured frame (flat line if no data) so it isn't blank.
+      render();
     }
-
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, [isPlaying, leftChannel, rightChannel, masterVolume]);
+  }, [isPlaying]);
+
+  // Redraw once on config change while paused.
+  useEffect(() => {
+    if (!isPlaying) render();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leftChannel, rightChannel, masterVolume]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -166,34 +132,28 @@ const WaveformVisualizer: React.FC<WaveformVisualizerProps> = ({
     const resizeCanvas = () => {
       const container = canvas.parentElement;
       if (!container) return;
-      
       const rect = container.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
-      
       canvas.width = rect.width * dpr;
       canvas.height = 256 * dpr;
-      
       const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.scale(dpr, dpr);
-      }
-      
+      if (ctx) ctx.scale(dpr, dpr);
       canvas.style.width = rect.width + 'px';
       canvas.style.height = '256px';
-      
-      drawWaveform(timeRef.current);
+      render();
     };
 
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
     return () => window.removeEventListener('resize', resizeCanvas);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-600">
       <div className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold text-white">Waveform Visualization</h3>
+          <h3 className="text-xl font-semibold text-white">Live Waveform</h3>
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-cyan-400 rounded-full"></div>
