@@ -204,4 +204,54 @@ describe('evaluateSession', () => {
       expect(at2000.left.frequency).toBe(100);
     });
   });
+
+  describe('loop wrap', () => {
+    it('wraps position within durationMs when loop is true', () => {
+      const session: Session = {
+        id: '1',
+        name: 'test',
+        durationMs: 5000,
+        loop: true,
+        events: [
+          { id: 'e1', timeMs: 1000, left: { frequency: 300 } },
+        ],
+      };
+
+      // t=6000 wraps to 1000 (6000 % 5000 = 1000), event fires at 1000
+      const at6000 = evaluateSession(session, 6000);
+      expect(at6000.left.frequency).toBe(300);
+    });
+
+    it('returns baseline when wrapped position is before any event', () => {
+      const session: Session = {
+        id: '1',
+        name: 'test',
+        durationMs: 5000,
+        loop: true,
+        events: [
+          { id: 'e1', timeMs: 1000, left: { frequency: 300 } },
+        ],
+      };
+
+      // t=5500 wraps to 500 (5500 % 5000 = 500), before event at 1000
+      const at5500 = evaluateSession(session, 5500);
+      expect(at5500.left.frequency).toBe(528);
+    });
+
+    it('does not wrap when loop is false', () => {
+      const session: Session = {
+        id: '1',
+        name: 'test',
+        durationMs: 5000,
+        loop: false,
+        events: [
+          { id: 'e1', timeMs: 1000, left: { frequency: 300 } },
+        ],
+      };
+
+      // t=6000 > durationMs, no wrapping, event at 1000 fires
+      const at6000 = evaluateSession(session, 6000);
+      expect(at6000.left.frequency).toBe(300);
+    });
+  });
 });
