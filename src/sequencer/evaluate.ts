@@ -15,9 +15,20 @@ export function evaluateSession(session: Session, timeMs: number): EvaluatedStat
   const right: ChannelState = { ...BASELINE.right };
   let masterVolume = BASELINE.masterVolume;
 
+  // Track "pre-ramp" values for interpolation
+  let prevLeft: ChannelState = { ...BASELINE.left };
+  let prevRight: ChannelState = { ...BASELINE.right };
+  let prevMasterVolume = BASELINE.masterVolume;
+
   for (const event of sorted) {
     if (event.timeMs > t) break;
 
+    // Snapshot values before this event applies
+    const snapshotLeft = { ...left };
+    const snapshotRight = { ...right };
+    const snapshotMaster = masterVolume;
+
+    // Apply discrete changes (waveform always snaps immediately)
     if (event.left) {
       if (event.left.frequency !== undefined) left.frequency = event.left.frequency;
       if (event.left.waveform !== undefined) left.waveform = event.left.waveform as Waveform;
@@ -31,6 +42,37 @@ export function evaluateSession(session: Session, timeMs: number): EvaluatedStat
     if (event.masterVolume !== undefined) {
       masterVolume = event.masterVolume;
     }
+
+    // If ramp is active, interpolate from pre-ramp snapshot to target
+    if (event.rampMs && event.rampMs > 0) {
+      const elapsed = t - event.timeMs;
+      const progress = Math.max(0, Math.min(1, elapsed / event.rampMs));
+
+      if (event.left) {
+        if (event.left.frequency !== undefined) {
+          left.frequency = snapshotLeft.frequency + (left.frequency - snapshotLeft.frequency) * progress;
+        }
+        if (event.left.amplitude !== undefined) {
+          left.amplitude = snapshotLeft.amplitude + (left.amplitude - snapshotLeft.amplitude) * progress;
+        }
+        // Waveform snaps immediately — already applied above, no interpolation
+      }
+      if (event.right) {
+        if (event.right.frequency !== undefined) {
+          right.frequency = snapshotRight.frequency + (right.frequency - snapshotRight.frequency) * progress;
+        }
+        if (event.right.amplitude !== undefined) {
+          right.amplitude = snapshotRight.amplitude + (right.amplitude - snapshotRight.amplitude) * progress;
+        }
+      }
+      if (event.masterVolume !== undefined) {
+        masterVolume = snapshotMaster + (masterVolume - snapshotMaster) * progress;
+      }
+    }
+
+    prevLeft = { ...left };
+    prevRight = { ...right };
+    prevMasterVolume = masterVolume;
   }
 
   return { left, right, masterVolume };

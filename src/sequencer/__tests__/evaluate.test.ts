@@ -117,4 +117,91 @@ describe('evaluateSession', () => {
       expect(at1000.masterVolume).toBe(1.0);
     });
   });
+
+  describe('ramps', () => {
+    it('interpolates frequency linearly during a ramp', () => {
+      const session: Session = {
+        id: '1',
+        name: 'test',
+        durationMs: 5000,
+        loop: false,
+        events: [
+          { id: 'e1', timeMs: 0, left: { frequency: 100 }, rampMs: 1000 },
+        ],
+      };
+
+      // At t=0, the ramp starts — frequency should be the baseline (528) since the
+      // event is at time 0 and we ramp FROM the previous value TO the target.
+      // The baseline is 528, target is 100, rampMs=1000.
+      // At t=500: progress = 500/1000 = 0.5, freq = 528 + (100-528)*0.5 = 528 - 214 = 314
+      const at0 = evaluateSession(session, 0);
+      expect(at0.left.frequency).toBe(528); // ramp hasn't progressed yet
+
+      const at500 = evaluateSession(session, 500);
+      expect(at500.left.frequency).toBeCloseTo(314, 0);
+
+      // At t=1000: ramp complete, frequency should snap to target
+      const at1000 = evaluateSession(session, 1000);
+      expect(at1000.left.frequency).toBe(100);
+    });
+
+    it('snaps waveform at ramp start (no waveform morphing)', () => {
+      const session: Session = {
+        id: '1',
+        name: 'test',
+        durationMs: 5000,
+        loop: false,
+        events: [
+          { id: 'e1', timeMs: 500, left: { waveform: 'square' }, rampMs: 1000 },
+        ],
+      };
+
+      // Before event: sine
+      expect(evaluateSession(session, 499).left.waveform).toBe('sine');
+      // At event time: waveform snaps to square immediately
+      expect(evaluateSession(session, 500).left.waveform).toBe('square');
+      // During ramp: still square (no morphing)
+      expect(evaluateSession(session, 750).left.waveform).toBe('square');
+      // After ramp: square
+      expect(evaluateSession(session, 2000).left.waveform).toBe('square');
+    });
+
+    it('interpolates amplitude linearly during a ramp', () => {
+      const session: Session = {
+        id: '1',
+        name: 'test',
+        durationMs: 5000,
+        loop: false,
+        events: [
+          { id: 'e1', timeMs: 0, right: { amplitude: 1.0 }, rampMs: 1000 },
+        ],
+      };
+
+      // Baseline amplitude = 0.5, target = 1.0, rampMs=1000
+      const at0 = evaluateSession(session, 0);
+      expect(at0.right.amplitude).toBe(0.5);
+
+      const at500 = evaluateSession(session, 500);
+      expect(at500.right.amplitude).toBeCloseTo(0.75, 2);
+
+      const at1000 = evaluateSession(session, 1000);
+      expect(at1000.right.amplitude).toBe(1.0);
+    });
+
+    it('clamps ramp progress to [0, 1]', () => {
+      const session: Session = {
+        id: '1',
+        name: 'test',
+        durationMs: 5000,
+        loop: false,
+        events: [
+          { id: 'e1', timeMs: 1000, left: { frequency: 100 }, rampMs: 500 },
+        ],
+      };
+
+      // After ramp is done, should be at target
+      const at2000 = evaluateSession(session, 2000);
+      expect(at2000.left.frequency).toBe(100);
+    });
+  });
 });
