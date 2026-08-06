@@ -9,12 +9,12 @@ export interface Preset {
 }
 
 export const DEFAULT_PRESETS: Preset[] = [
-  { id: 'solfeggio', name: 'Solfeggio', freq: 528, desc: 'Love & Healing', color: 'from-green-500 to-emerald-600' },
-  { id: 'earth-tone', name: 'Earth Tone', freq: 432, desc: 'Natural Harmony', color: 'from-blue-500 to-cyan-600' },
-  { id: 'crown-chakra', name: 'Crown Chakra', freq: 963, desc: 'Spiritual Connection', color: 'from-purple-500 to-violet-600' },
-  { id: 'ce5-contact', name: 'CE5 Contact', freq: 1111, desc: 'ET Communication', color: 'from-yellow-500 to-orange-600' },
-  { id: 'alpha-waves', name: 'Alpha Waves', freq: 10, desc: 'Relaxation', color: 'from-indigo-500 to-purple-600' },
-  { id: 'theta-waves', name: 'Theta Waves', freq: 6, desc: 'Deep Meditation', color: 'from-pink-500 to-rose-600' },
+  { id: 'solfeggio', name: 'Solfeggio', freq: 528, desc: '528 Hz tone', color: 'from-green-500 to-emerald-600' },
+  { id: 'earth-tone', name: 'Earth Tone', freq: 432, desc: '432 Hz tone', color: 'from-blue-500 to-cyan-600' },
+  { id: 'crown-chakra', name: '963 Hz', freq: 963, desc: '963 Hz tone', color: 'from-purple-500 to-violet-600' },
+  { id: 'ce5-contact', name: '1111 Hz', freq: 1111, desc: '1111 Hz tone', color: 'from-yellow-500 to-orange-600' },
+  { id: 'alpha-waves', name: 'Alpha Waves', freq: 10, desc: '10 Hz beat', color: 'from-indigo-500 to-purple-600' },
+  { id: 'theta-waves', name: 'Theta Waves', freq: 6, desc: '6 Hz beat', color: 'from-pink-500 to-rose-600' },
 ];
 
 export const STORAGE_KEY = 'anahata.presets';
