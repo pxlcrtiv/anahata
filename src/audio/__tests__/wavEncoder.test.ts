@@ -66,8 +66,8 @@ describe('encodeWAV', () => {
     const buf = encodeWAV(samples, 1, 44100);
     const view = new DataView(buf);
     const sample = view.getInt16(44, true);
-    // -0.5: 0.5 + (-0.5) = 0, not < 0, so s * 32767 = -16383.5 -> -16383
-    expect(sample).toBe(-16383);
+    // -0.5 < 0: s * 32768 = -16384
+    expect(sample).toBe(-16384);
   });
 
   it('clamps values outside [-1, 1]', () => {
@@ -101,7 +101,7 @@ describe('encodeWAV', () => {
     const buf = encodeWAV(samples, 1, 48000);
     const view = new DataView(buf);
     const encoded = view.getInt16(44, true);
-    // 0.5 + 0.25 = 0.75, not < 0, so s * 32767 = 8191.75, |0 = 8191
+    // 0.25 >= 0: s * 32767 = 8191.75, |0 = 8191
     expect(encoded).toBe((val * 32767) | 0);
   });
 
