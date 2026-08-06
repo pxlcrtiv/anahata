@@ -10,6 +10,8 @@ import TransportBar from './TransportBar';
 import TimelineEditor from './TimelineEditor';
 import SessionPanel from './SessionPanel';
 import { Waves } from 'lucide-react';
+import { interpolateState, DEFAULT_CROSSFADE_MS } from '../sequencer/crossfade';
+import { evaluateSession } from '../sequencer/evaluate';
 import type { EvaluatedState } from '../sequencer/types';
 
 const WaveGenerator = () => {
@@ -28,27 +30,46 @@ const WaveGenerator = () => {
   const [masterVolume, setMasterVolume] = useState(0.7);
 
   const sequencerRunningRef = useRef(false);
+  const crossfadeRef = useRef<{
+    from: EvaluatedState;
+    to: EvaluatedState;
+    startTime: number;
+    duration: number;
+  } | null>(null);
+  const lastTickStateRef = useRef<EvaluatedState | null>(null);
 
   const { startAudio, stopAudio, updateFrequency, updateAmplitude, updateWaveform, updateMasterVolume, exportWAV, getWaveformData } = useAudioEngine();
 
   const handleSequencerTick = useCallback((state: EvaluatedState) => {
+    let effectiveState = state;
+
+    if (crossfadeRef.current) {
+      const elapsed = performance.now() - crossfadeRef.current.startTime;
+      const progress = Math.min(1, elapsed / crossfadeRef.current.duration);
+      effectiveState = interpolateState(crossfadeRef.current.from, crossfadeRef.current.to, progress);
+
+      if (progress >= 1) {
+        crossfadeRef.current = null;
+      }
+    }
+
+    lastTickStateRef.current = effectiveState;
+
     if (!sequencerRunningRef.current) {
-      // First tick: start audio with current evaluated state
       startAudio({
-        leftChannel: { frequency: state.left.frequency, waveform: state.left.waveform, amplitude: state.left.amplitude },
-        rightChannel: { frequency: state.right.frequency, waveform: state.right.waveform, amplitude: state.right.amplitude },
-        masterVolume: state.masterVolume,
+        leftChannel: { frequency: effectiveState.left.frequency, waveform: effectiveState.left.waveform, amplitude: effectiveState.left.amplitude },
+        rightChannel: { frequency: effectiveState.right.frequency, waveform: effectiveState.right.waveform, amplitude: effectiveState.right.amplitude },
+        masterVolume: effectiveState.masterVolume,
       });
       sequencerRunningRef.current = true;
     } else {
-      // Subsequent ticks: update in place
-      updateFrequency('left', state.left.frequency);
-      updateFrequency('right', state.right.frequency);
-      updateAmplitude('left', state.left.amplitude);
-      updateAmplitude('right', state.right.amplitude);
-      updateWaveform('left', state.left.waveform as OscillatorType);
-      updateWaveform('right', state.right.waveform as OscillatorType);
-      updateMasterVolume(state.masterVolume);
+      updateFrequency('left', effectiveState.left.frequency);
+      updateFrequency('right', effectiveState.right.frequency);
+      updateAmplitude('left', effectiveState.left.amplitude);
+      updateAmplitude('right', effectiveState.right.amplitude);
+      updateWaveform('left', effectiveState.left.waveform as OscillatorType);
+      updateWaveform('right', effectiveState.right.waveform as OscillatorType);
+      updateMasterVolume(effectiveState.masterVolume);
     }
   }, [startAudio, updateFrequency, updateAmplitude, updateWaveform, updateMasterVolume]);
 
@@ -177,6 +198,15 @@ const WaveGenerator = () => {
   };
 
   const handleSessionChange = (newSession: typeof session) => {
+    if (sequencerPlaying && sequencerRunningRef.current && lastTickStateRef.current) {
+      const targetState = evaluateSession(newSession, 0);
+      crossfadeRef.current = {
+        from: lastTickStateRef.current,
+        to: targetState,
+        startTime: performance.now(),
+        duration: DEFAULT_CROSSFADE_MS,
+      };
+    }
     setSession(newSession);
   };
 
