@@ -2,6 +2,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { useAudioEngine } from '../hooks/useAudioEngine';
 import { useSequencer } from '../hooks/useSequencer';
+import { useRecording } from '../audio/recording';
 import PlayerControls from './PlayerControls';
 import FrequencyPresets from './FrequencyPresets';
 import ChannelMixer from './ChannelMixer';
@@ -29,7 +30,8 @@ const WaveGenerator = () => {
 
   const sequencerRunningRef = useRef(false);
 
-  const { startAudio, stopAudio, updateFrequency, updateAmplitude, updateWaveform, updateMasterVolume, exportWAV, getWaveformData } = useAudioEngine();
+  const { startAudio, stopAudio, updateFrequency, updateAmplitude, updateWaveform, updateMasterVolume, exportWAV, getWaveformData, getAudioContext, getMasterGain } = useAudioEngine();
+  const { startRecording, stopRecording, isRecording } = useRecording();
 
   const handleSequencerTick = useCallback((state: EvaluatedState) => {
     if (!sequencerRunningRef.current) {
@@ -174,10 +176,25 @@ const WaveGenerator = () => {
     sequencerRunningRef.current = false;
     stopAudio();
     setIsPlaying(false);
+    if (isRecording) {
+      stopRecording();
+    }
   };
 
   const handleSessionChange = (newSession: typeof session) => {
     setSession(newSession);
+  };
+
+  const handleToggleRecord = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      const ctx = getAudioContext();
+      const master = getMasterGain();
+      if (ctx && master) {
+        startRecording(ctx, master);
+      }
+    }
   };
 
   return (
@@ -245,6 +262,9 @@ const WaveGenerator = () => {
             onSeek={seek}
             onToggleLoop={() => setSession({ ...session, loop: !session.loop })}
             onDurationChange={(ms) => setSession({ ...session, durationMs: ms })}
+            isRecording={isRecording}
+            canRecord={sequencerPlaying}
+            onToggleRecord={handleToggleRecord}
           />
 
           <TimelineEditor

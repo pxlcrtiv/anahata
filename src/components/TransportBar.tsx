@@ -11,6 +11,9 @@ interface TransportBarProps {
   onSeek: (ms: number) => void;
   onToggleLoop: () => void;
   onDurationChange: (ms: number) => void;
+  isRecording?: boolean;
+  canRecord?: boolean;
+  onToggleRecord?: () => void;
 }
 
 const TransportBar: React.FC<TransportBarProps> = ({
@@ -24,6 +27,9 @@ const TransportBar: React.FC<TransportBarProps> = ({
   onSeek,
   onToggleLoop,
   onDurationChange,
+  isRecording = false,
+  canRecord = false,
+  onToggleRecord,
 }) => {
   const formatTime = (ms: number) => {
     const s = Math.floor(ms / 1000);
@@ -51,6 +57,19 @@ const TransportBar: React.FC<TransportBarProps> = ({
         className={`px-3 py-2 rounded ${loop ? 'bg-blue-500' : 'bg-gray-600'}`}
       >
         Loop
+      </button>
+      <button
+        onClick={onToggleRecord}
+        disabled={!canRecord}
+        className={`px-3 py-2 rounded font-bold ${
+          isRecording
+            ? 'bg-red-500 animate-pulse'
+            : canRecord
+            ? 'bg-gray-600 hover:bg-gray-500'
+            : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+        }`}
+      >
+        {isRecording ? '■ Stop Rec' : '● Rec'}
       </button>
       <input
         type="range"
