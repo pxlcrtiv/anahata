@@ -191,7 +191,7 @@ const WaveGenerator = () => {
           </h1>
         </div>
         <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-          Professional wave generator for healing frequencies, binaural beats, and audio experiments
+          Dual-channel wave generator for binaural beats and audio experimentation
         </p>
       </div>
 
