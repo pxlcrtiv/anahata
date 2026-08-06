@@ -28,6 +28,7 @@ const WaveGenerator = () => {
   });
   const [linkedChannels, setLinkedChannels] = useState(true);
   const [masterVolume, setMasterVolume] = useState(0.7);
+  const [crossfadeMs, setCrossfadeMs] = useState(DEFAULT_CROSSFADE_MS);
 
   const sequencerRunningRef = useRef(false);
   const crossfadeRef = useRef<{
@@ -204,7 +205,7 @@ const WaveGenerator = () => {
         from: lastTickStateRef.current,
         to: targetState,
         startTime: performance.now(),
-        duration: DEFAULT_CROSSFADE_MS,
+        duration: crossfadeMs,
       };
     }
     setSession(newSession);
@@ -287,6 +288,8 @@ const WaveGenerator = () => {
           <SessionPanel
             session={session}
             onChangeSession={handleSessionChange}
+            crossfadeMs={crossfadeMs}
+            onCrossfadeMsChange={setCrossfadeMs}
           />
         </div>
       </div>
