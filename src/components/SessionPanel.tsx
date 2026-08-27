@@ -4,6 +4,8 @@ import type { Session } from '../sequencer/types';
 interface SessionPanelProps {
   session: Session;
   onChangeSession: (session: Session) => void;
+  crossfadeMs: number;
+  onCrossfadeMsChange: (ms: number) => void;
 }
 
 const STORAGE_KEY = 'anahata.sessions';
@@ -21,7 +23,7 @@ const saveSessions = (sessions: Session[]) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
 };
 
-const SessionPanel: React.FC<SessionPanelProps> = ({ session, onChangeSession }) => {
+const SessionPanel: React.FC<SessionPanelProps> = ({ session, onChangeSession, crossfadeMs, onCrossfadeMsChange }) => {
   const [name, setName] = useState(session.name);
   const [savedList, setSavedList] = useState<Session[]>(loadSessions);
 
@@ -93,6 +95,19 @@ const SessionPanel: React.FC<SessionPanelProps> = ({ session, onChangeSession })
           Import
           <input type="file" accept=".json" onChange={handleImport} className="hidden" />
         </label>
+      </div>
+      <div className="flex items-center gap-2 text-sm">
+        <label className="text-gray-400">Crossfade</label>
+        <input
+          type="number"
+          min={0}
+          max={2000}
+          step={50}
+          value={crossfadeMs}
+          onChange={(e) => onCrossfadeMsChange(Number(e.target.value))}
+          className="bg-gray-700 rounded px-2 py-1 w-20 text-sm"
+        />
+        <span className="text-gray-500">ms</span>
       </div>
       {savedList.length > 0 && (
         <div className="space-y-1 max-h-40 overflow-y-auto">
