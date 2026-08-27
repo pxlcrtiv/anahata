@@ -1,5 +1,6 @@
 
 import { useRef, useCallback, useEffect } from 'react';
+import { encodeWAV } from '../audio/wavEncoder';
 
 interface AudioEngineConfig {
   leftChannel: {
@@ -256,61 +257,27 @@ export const useAudioEngine = () => {
     updateMasterVolume,
     exportWAV,
     getWaveformData,
-    isPlaying: isPlayingRef.current
+    isPlaying: isPlayingRef.current,
+    getAudioContext: () => audioContextRef.current,
+    getMasterGain: () => masterGainRef.current,
   };
 };
 
 // Helper function to convert AudioBuffer to WAV
 function bufferToWave(abuffer: AudioBuffer, len: number) {
   const numOfChan = abuffer.numberOfChannels;
-  const length = len * numOfChan * 2 + 44;
-  const buffer = new ArrayBuffer(length);
-  const view = new DataView(buffer);
-  const channels = [];
-  let sample;
-  let offset = 0;
-  let pos = 0;
+  const channels: Float32Array[] = [];
+  for (let i = 0; i < numOfChan; i++) {
+    channels.push(abuffer.getChannelData(i).subarray(0, len));
+  }
 
-  // write WAVE header
-  setUint32(0x46464952); // "RIFF"
-  setUint32(length - 8); // file length - 8
-  setUint32(0x45564157); // "WAVE"
-
-  setUint32(0x20746d66); // "fmt " chunk
-  setUint32(16); // length = 16
-  setUint16(1); // PCM (uncompressed)
-  setUint16(numOfChan);
-  setUint32(abuffer.sampleRate);
-  setUint32(abuffer.sampleRate * 2 * numOfChan); // avg. bytes/sec
-  setUint16(numOfChan * 2); // block-align
-  setUint16(16); // 16-bit (hardcoded in this demo)
-
-  setUint32(0x61746164); // "data" - chunk
-  setUint32(length - pos - 4); // chunk length
-
-  // write interleaved data
-  for (let i = 0; i < abuffer.numberOfChannels; i++)
-    channels.push(abuffer.getChannelData(i));
-
-  while (pos < length) {
-    for (let i = 0; i < numOfChan; i++) {
-      sample = Math.max(-1, Math.min(1, channels[i][offset])); // clamp
-      sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0; // scale to 16-bit signed int
-      view.setInt16(pos, sample, true); // write 16-bit sample
-      pos += 2;
+  // Interleave channels
+  const interleaved = new Float32Array(len * numOfChan);
+  for (let i = 0; i < len; i++) {
+    for (let ch = 0; ch < numOfChan; ch++) {
+      interleaved[i * numOfChan + ch] = channels[ch][i];
     }
-    offset++; // next sample
   }
 
-  function setUint16(data: number) {
-    view.setUint16(pos, data, true);
-    pos += 2;
-  }
-
-  function setUint32(data: number) {
-    view.setUint32(pos, data, true);
-    pos += 4;
-  }
-
-  return buffer;
+  return encodeWAV(interleaved, numOfChan, abuffer.sampleRate);
 }
