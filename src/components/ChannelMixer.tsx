@@ -77,7 +77,7 @@ const ChannelMixer: React.FC<ChannelMixerProps> = ({
                 <Slider
                   value={[leftChannel.frequency]}
                   onValueChange={(value) => onLeftChannelChange({ frequency: value[0] })}
-                  min={20}
+                  min={1}
                   max={2000}
                   step={1}
                   className="mt-2"
@@ -145,7 +145,7 @@ const ChannelMixer: React.FC<ChannelMixerProps> = ({
                 <Slider
                   value={[rightChannel.frequency]}
                   onValueChange={(value) => onRightChannelChange({ frequency: value[0] })}
-                  min={20}
+                  min={1}
                   max={2000}
                   step={1}
                   className="mt-2"

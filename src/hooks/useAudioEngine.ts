@@ -22,7 +22,14 @@ export const useAudioEngine = () => {
   const leftGainRef = useRef<GainNode | null>(null);
   const rightGainRef = useRef<GainNode | null>(null);
   const masterGainRef = useRef<GainNode | null>(null);
+  const leftAnalyserRef = useRef<AnalyserNode | null>(null);
+  const rightAnalyserRef = useRef<AnalyserNode | null>(null);
   const isPlayingRef = useRef(false);
+
+  // Peaks the most recent per-channel time-domain sample (0..1) for visualization.
+  // Kept in refs so the visualizer can read them without re-rendering React.
+  const leftDataRef = useRef<Uint8Array | null>(null);
+  const rightDataRef = useRef<Uint8Array | null>(null);
 
   const initializeAudioContext = useCallback(async () => {
     if (!audioContextRef.current) {
@@ -45,31 +52,41 @@ export const useAudioEngine = () => {
     // Stop existing oscillators
     stopAudio();
 
-    // Create stereo split
-    const splitter = audioContextRef.current.createChannelSplitter(2);
     const merger = audioContextRef.current.createChannelMerger(2);
 
-    // Left channel
+    // Left channel: oscillator -> gain -> analyser -> merger
     leftOscillatorRef.current = audioContextRef.current.createOscillator();
     leftGainRef.current = audioContextRef.current.createGain();
-    
+    leftAnalyserRef.current = audioContextRef.current.createAnalyser();
+    leftAnalyserRef.current.fftSize = 2048;
+    leftAnalyserRef.current.smoothingTimeConstant = 0.4;
+    // 1024 samples gives a window of ~23ms at 44.1kHz — enough to show a few
+    // cycles of low binaural beats while staying responsive.
+    leftDataRef.current = new Uint8Array(leftAnalyserRef.current.frequencyBinCount);
+
     leftOscillatorRef.current.frequency.setValueAtTime(config.leftChannel.frequency, audioContextRef.current.currentTime);
     leftOscillatorRef.current.type = config.leftChannel.waveform as OscillatorType;
     leftGainRef.current.gain.setValueAtTime(config.leftChannel.amplitude, audioContextRef.current.currentTime);
-    
-    leftOscillatorRef.current.connect(leftGainRef.current);
-    leftGainRef.current.connect(merger, 0, 0);
 
-    // Right channel
+    leftOscillatorRef.current.connect(leftGainRef.current);
+    leftGainRef.current.connect(leftAnalyserRef.current);
+    leftAnalyserRef.current.connect(merger, 0, 0);
+
+    // Right channel: oscillator -> gain -> analyser -> merger
     rightOscillatorRef.current = audioContextRef.current.createOscillator();
     rightGainRef.current = audioContextRef.current.createGain();
-    
+    rightAnalyserRef.current = audioContextRef.current.createAnalyser();
+    rightAnalyserRef.current.fftSize = 2048;
+    rightAnalyserRef.current.smoothingTimeConstant = 0.4;
+    rightDataRef.current = new Uint8Array(rightAnalyserRef.current.frequencyBinCount);
+
     rightOscillatorRef.current.frequency.setValueAtTime(config.rightChannel.frequency, audioContextRef.current.currentTime);
     rightOscillatorRef.current.type = config.rightChannel.waveform as OscillatorType;
     rightGainRef.current.gain.setValueAtTime(config.rightChannel.amplitude, audioContextRef.current.currentTime);
-    
+
     rightOscillatorRef.current.connect(rightGainRef.current);
-    rightGainRef.current.connect(merger, 0, 1);
+    rightGainRef.current.connect(rightAnalyserRef.current);
+    rightAnalyserRef.current.connect(merger, 0, 1);
 
     // Connect to master gain
     merger.connect(masterGainRef.current);
@@ -83,13 +100,35 @@ export const useAudioEngine = () => {
   }, [initializeAudioContext]);
 
   const stopAudio = useCallback(() => {
-    if (leftOscillatorRef.current) {
-      leftOscillatorRef.current.stop();
-      leftOscillatorRef.current = null;
+    const now = audioContextRef.current?.currentTime ?? 0;
+
+    // Quick fade to avoid a click, then tear down.
+    if (masterGainRef.current && audioContextRef.current) {
+      masterGainRef.current.gain.cancelScheduledValues(now);
+      masterGainRef.current.gain.setValueAtTime(masterGainRef.current.gain.value, now);
+      masterGainRef.current.gain.linearRampToValueAtTime(0, now + 0.02);
     }
-    if (rightOscillatorRef.current) {
-      rightOscillatorRef.current.stop();
-      rightOscillatorRef.current = null;
+
+    [leftOscillatorRef, rightOscillatorRef].forEach((ref) => {
+      const osc = ref.current;
+      if (osc) {
+        try { osc.stop(now + 0.03); } catch { /* already stopped */ }
+        osc.disconnect();
+        ref.current = null;
+      }
+    });
+
+    [leftGainRef, rightGainRef, leftAnalyserRef, rightAnalyserRef].forEach((ref) => {
+      if (ref.current) {
+        ref.current.disconnect();
+        ref.current = null;
+      }
+    });
+    leftDataRef.current = null;
+    rightDataRef.current = null;
+
+    if (masterGainRef.current) {
+      masterGainRef.current.gain.setValueAtTime(0.7, now);
     }
     isPlayingRef.current = false;
   }, []);
@@ -116,6 +155,25 @@ export const useAudioEngine = () => {
     if (!audioContextRef.current || !masterGainRef.current) return;
     
     masterGainRef.current.gain.setValueAtTime(volume, audioContextRef.current.currentTime);
+  }, []);
+
+  const updateWaveform = useCallback((channel: 'left' | 'right', type: OscillatorType) => {
+    if (!audioContextRef.current || !isPlayingRef.current) return;
+
+    const oscillator = channel === 'left' ? leftOscillatorRef.current : rightOscillatorRef.current;
+    if (oscillator) {
+      oscillator.type = type;
+    }
+  }, []);
+
+  const getWaveformData = useCallback(() => {
+    if (leftAnalyserRef.current && leftDataRef.current) {
+      leftAnalyserRef.current.getByteTimeDomainData(leftDataRef.current);
+    }
+    if (rightAnalyserRef.current && rightDataRef.current) {
+      rightAnalyserRef.current.getByteTimeDomainData(rightDataRef.current);
+    }
+    return { left: leftDataRef.current, right: rightDataRef.current };
   }, []);
 
   const exportWAV = useCallback((config: AudioEngineConfig, duration: number = 10) => {
@@ -194,8 +252,10 @@ export const useAudioEngine = () => {
     stopAudio,
     updateFrequency,
     updateAmplitude,
+    updateWaveform,
     updateMasterVolume,
     exportWAV,
+    getWaveformData,
     isPlaying: isPlayingRef.current
   };
 };
