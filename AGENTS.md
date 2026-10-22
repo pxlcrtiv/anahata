@@ -6,7 +6,7 @@ Guidance for AI coding agents (OpenCode, Claude Code, etc.) working in this repo
 
 ### Issue tracker
 
-Issues live in **GitHub Issues** for this repo (`pxlcrtiv/anahata`). Use the `gh` CLI to create/list/read issues. PRs are created via `gh pr create`. See `docs/agents/issue-tracker.md`.
+Issues live in **GitHub Issues** for this repo (`pxlcrtiv/anahata`). Use the `gh` CLI to create/list/read issues; completed work references and closes the originating issue. Issues are the request surface — PRs are not. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
