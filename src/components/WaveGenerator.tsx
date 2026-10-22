@@ -13,16 +13,16 @@ import SessionPanel from './SessionPanel';
 import { Waves } from 'lucide-react';
 import { interpolateState, DEFAULT_CROSSFADE_MS } from '../sequencer/crossfade';
 import { evaluateSession } from '../sequencer/evaluate';
-import type { EvaluatedState } from '../sequencer/types';
+import type { ChannelState, EvaluatedState } from '../sequencer/types';
 
 const WaveGenerator = () => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [leftChannel, setLeftChannel] = useState({
+  const [leftChannel, setLeftChannel] = useState<ChannelState>({
     frequency: 528,
     waveform: 'sine',
     amplitude: 0.5
   });
-  const [rightChannel, setRightChannel] = useState({
+  const [rightChannel, setRightChannel] = useState<ChannelState>({
     frequency: 528,
     waveform: 'sine',
     amplitude: 0.5
