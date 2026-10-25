@@ -1,16 +1,18 @@
 
 import { useRef, useCallback, useEffect } from 'react';
 import { encodeWAV } from '../audio/wavEncoder';
+import { renderToneSample } from '../audio/synth';
+import type { Waveform } from '../sequencer/types';
 
 interface AudioEngineConfig {
   leftChannel: {
     frequency: number;
-    waveform: string;
+    waveform: Waveform;
     amplitude: number;
   };
   rightChannel: {
     frequency: number;
-    waveform: string;
+    waveform: Waveform;
     amplitude: number;
   };
   masterVolume: number;
@@ -66,7 +68,7 @@ export const useAudioEngine = () => {
     leftDataRef.current = new Uint8Array(leftAnalyserRef.current.frequencyBinCount);
 
     leftOscillatorRef.current.frequency.setValueAtTime(config.leftChannel.frequency, audioContextRef.current.currentTime);
-    leftOscillatorRef.current.type = config.leftChannel.waveform as OscillatorType;
+    leftOscillatorRef.current.type = config.leftChannel.waveform;
     leftGainRef.current.gain.setValueAtTime(config.leftChannel.amplitude, audioContextRef.current.currentTime);
 
     leftOscillatorRef.current.connect(leftGainRef.current);
@@ -82,7 +84,7 @@ export const useAudioEngine = () => {
     rightDataRef.current = new Uint8Array(rightAnalyserRef.current.frequencyBinCount);
 
     rightOscillatorRef.current.frequency.setValueAtTime(config.rightChannel.frequency, audioContextRef.current.currentTime);
-    rightOscillatorRef.current.type = config.rightChannel.waveform as OscillatorType;
+    rightOscillatorRef.current.type = config.rightChannel.waveform;
     rightGainRef.current.gain.setValueAtTime(config.rightChannel.amplitude, audioContextRef.current.currentTime);
 
     rightOscillatorRef.current.connect(rightGainRef.current);
@@ -190,42 +192,21 @@ export const useAudioEngine = () => {
     for (let i = 0; i < length; i++) {
       const time = i / sampleRate;
       
-      // Generate left channel
-      let leftValue = 0;
-      switch (config.leftChannel.waveform) {
-        case 'sine':
-          leftValue = Math.sin(2 * Math.PI * config.leftChannel.frequency * time);
-          break;
-        case 'square':
-          leftValue = Math.sign(Math.sin(2 * Math.PI * config.leftChannel.frequency * time));
-          break;
-        case 'triangle':
-          leftValue = (2 / Math.PI) * Math.asin(Math.sin(2 * Math.PI * config.leftChannel.frequency * time));
-          break;
-        case 'sawtooth':
-          leftValue = 2 * (config.leftChannel.frequency * time - Math.floor(config.leftChannel.frequency * time + 0.5));
-          break;
-      }
+      leftChannel[i] = renderToneSample(
+        config.leftChannel.waveform,
+        config.leftChannel.frequency,
+        config.leftChannel.amplitude,
+        config.masterVolume,
+        time,
+      );
       
-      // Generate right channel
-      let rightValue = 0;
-      switch (config.rightChannel.waveform) {
-        case 'sine':
-          rightValue = Math.sin(2 * Math.PI * config.rightChannel.frequency * time);
-          break;
-        case 'square':
-          rightValue = Math.sign(Math.sin(2 * Math.PI * config.rightChannel.frequency * time));
-          break;
-        case 'triangle':
-          rightValue = (2 / Math.PI) * Math.asin(Math.sin(2 * Math.PI * config.rightChannel.frequency * time));
-          break;
-        case 'sawtooth':
-          rightValue = 2 * (config.rightChannel.frequency * time - Math.floor(config.rightChannel.frequency * time + 0.5));
-          break;
-      }
-      
-      leftChannel[i] = leftValue * config.leftChannel.amplitude * config.masterVolume;
-      rightChannel[i] = rightValue * config.rightChannel.amplitude * config.masterVolume;
+      rightChannel[i] = renderToneSample(
+        config.rightChannel.waveform,
+        config.rightChannel.frequency,
+        config.rightChannel.amplitude,
+        config.masterVolume,
+        time,
+      );
     }
 
     // Convert to WAV and download
