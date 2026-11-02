@@ -40,7 +40,7 @@ const WaveGenerator = () => {
   } | null>(null);
   const lastTickStateRef = useRef<EvaluatedState | null>(null);
 
-  const { startAudio, stopAudio, updateFrequency, updateAmplitude, updateWaveform, updateMasterVolume, exportWAV, getWaveformData, getAudioContext, getMasterGain } = useAudioEngine();
+  const { startAudio, stopAudio, applyState, exportWAV, getWaveformData, getAudioContext, getMasterGain } = useAudioEngine();
   const { startRecording, stopRecording, isRecording } = useRecording();
 
   const handleSequencerTick = useCallback((state: EvaluatedState) => {
@@ -66,15 +66,9 @@ const WaveGenerator = () => {
       });
       sequencerRunningRef.current = true;
     } else {
-      updateFrequency('left', effectiveState.left.frequency);
-      updateFrequency('right', effectiveState.right.frequency);
-      updateAmplitude('left', effectiveState.left.amplitude);
-      updateAmplitude('right', effectiveState.right.amplitude);
-      updateWaveform('left', effectiveState.left.waveform as OscillatorType);
-      updateWaveform('right', effectiveState.right.waveform as OscillatorType);
-      updateMasterVolume(effectiveState.masterVolume);
+      applyState(effectiveState);
     }
-  }, [startAudio, updateFrequency, updateAmplitude, updateWaveform, updateMasterVolume]);
+  }, [startAudio, applyState]);
 
   const {
     session,
@@ -118,30 +112,33 @@ const WaveGenerator = () => {
   };
 
   const handleLeftChannelChange = (changes: Partial<typeof leftChannel>) => {
-    const newConfig = { ...leftChannel, ...changes };
-    setLeftChannel(newConfig);
-    
-    if (linkedChannels && changes.frequency !== undefined) {
-      setRightChannel(prev => ({ ...prev, frequency: changes.frequency! }));
-    }
-    if (linkedChannels && changes.waveform !== undefined) {
-      setRightChannel(prev => ({ ...prev, waveform: changes.waveform! }));
-    }
-    if (linkedChannels && changes.amplitude !== undefined) {
-      setRightChannel(prev => ({ ...prev, amplitude: changes.amplitude! }));
+    const newLeft = { ...leftChannel, ...changes };
+    setLeftChannel(newLeft);
+
+    if (linkedChannels) {
+      if (changes.frequency !== undefined) setRightChannel(prev => ({ ...prev, frequency: changes.frequency! }));
+      if (changes.waveform !== undefined) setRightChannel(prev => ({ ...prev, waveform: changes.waveform! }));
+      if (changes.amplitude !== undefined) setRightChannel(prev => ({ ...prev, amplitude: changes.amplitude! }));
     }
 
-    if (isPlaying && changes.frequency !== undefined) {
-      updateFrequency('left', changes.frequency);
-      if (linkedChannels) {
-        updateFrequency('right', changes.frequency);
-      }
-    }
-    if (isPlaying && changes.amplitude !== undefined) {
-      updateAmplitude('left', changes.amplitude);
-      if (linkedChannels) {
-        updateAmplitude('right', changes.amplitude);
-      }
+    if (isPlaying) {
+      const rightFreq = linkedChannels && changes.frequency !== undefined ? changes.frequency : rightChannel.frequency;
+      const rightWaveform = linkedChannels && changes.waveform !== undefined ? changes.waveform : rightChannel.waveform;
+      const rightAmplitude = linkedChannels && changes.amplitude !== undefined ? changes.amplitude : rightChannel.amplitude;
+
+      applyState({
+        left: {
+          frequency: changes.frequency ?? leftChannel.frequency,
+          waveform: (changes.waveform ?? leftChannel.waveform) as EvaluatedState['left']['waveform'],
+          amplitude: changes.amplitude ?? leftChannel.amplitude,
+        },
+        right: {
+          frequency: rightFreq,
+          waveform: rightWaveform as EvaluatedState['right']['waveform'],
+          amplitude: rightAmplitude,
+        },
+        masterVolume,
+      });
     }
   };
 
@@ -155,21 +152,42 @@ const WaveGenerator = () => {
       return;
     }
 
-    const newConfig = { ...rightChannel, ...changes };
-    setRightChannel(newConfig);
+    const newRight = { ...rightChannel, ...changes };
+    setRightChannel(newRight);
 
-    if (isPlaying && changes.frequency !== undefined) {
-      updateFrequency('right', changes.frequency);
-    }
-    if (isPlaying && changes.amplitude !== undefined) {
-      updateAmplitude('right', changes.amplitude);
+    if (isPlaying) {
+      applyState({
+        left: {
+          frequency: leftChannel.frequency,
+          waveform: leftChannel.waveform as EvaluatedState['left']['waveform'],
+          amplitude: leftChannel.amplitude,
+        },
+        right: {
+          frequency: changes.frequency ?? rightChannel.frequency,
+          waveform: (changes.waveform ?? rightChannel.waveform) as EvaluatedState['right']['waveform'],
+          amplitude: changes.amplitude ?? rightChannel.amplitude,
+        },
+        masterVolume,
+      });
     }
   };
 
   const handleVolumeChange = (volume: number) => {
     setMasterVolume(volume);
     if (isPlaying) {
-      updateMasterVolume(volume);
+      applyState({
+        left: {
+          frequency: leftChannel.frequency,
+          waveform: leftChannel.waveform as EvaluatedState['left']['waveform'],
+          amplitude: leftChannel.amplitude,
+        },
+        right: {
+          frequency: rightChannel.frequency,
+          waveform: rightChannel.waveform as EvaluatedState['right']['waveform'],
+          amplitude: rightChannel.amplitude,
+        },
+        masterVolume: volume,
+      });
     }
   };
 
@@ -260,7 +278,7 @@ const WaveGenerator = () => {
         <FrequencyPresets onFrequencySelect={handleFrequencySelect} />
 
         {/* Waveform Visualizer */}
-        <WaveformVisualizer 
+        <WaveformVisualizer
           leftChannel={leftChannel}
           rightChannel={rightChannel}
           isPlaying={isPlaying}

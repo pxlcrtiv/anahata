@@ -1,10 +1,10 @@
 
 import { useRef, useCallback, useEffect } from 'react';
 import { encodeWAV } from '../audio/wavEncoder';
-import { renderToneSample } from '../audio/synth';
-import type { Waveform } from '../sequencer/types';
+import { generateWaveformSamples } from '../audio/waveform';
+import type { EvaluatedState, Waveform } from '../sequencer/types';
 
-interface AudioEngineConfig {
+export interface AudioEngineConfig {
   leftChannel: {
     frequency: number;
     waveform: Waveform;
@@ -34,12 +34,20 @@ export const useAudioEngine = () => {
   const leftDataRef = useRef<Uint8Array | null>(null);
   const rightDataRef = useRef<Uint8Array | null>(null);
 
+  const nodesRef = useRef<{
+    oscillators: OscillatorNode[];
+    gains: GainNode[];
+    analysers: AnalyserNode[];
+    masterGain: GainNode | null;
+  }>({ oscillators: [], gains: [], analysers: [], masterGain: null });
+
   const initializeAudioContext = useCallback(async () => {
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      
+
       // Create master gain node
       masterGainRef.current = audioContextRef.current.createGain();
+      nodesRef.current.masterGain = masterGainRef.current;
       masterGainRef.current.connect(audioContextRef.current.destination);
     }
 
@@ -59,8 +67,11 @@ export const useAudioEngine = () => {
 
     // Left channel: oscillator -> gain -> analyser -> merger
     leftOscillatorRef.current = audioContextRef.current.createOscillator();
+    nodesRef.current.oscillators.push(leftOscillatorRef.current);
     leftGainRef.current = audioContextRef.current.createGain();
+    nodesRef.current.gains.push(leftGainRef.current);
     leftAnalyserRef.current = audioContextRef.current.createAnalyser();
+    nodesRef.current.analysers.push(leftAnalyserRef.current);
     leftAnalyserRef.current.fftSize = 2048;
     leftAnalyserRef.current.smoothingTimeConstant = 0.4;
     // 1024 samples gives a window of ~23ms at 44.1kHz — enough to show a few
@@ -77,8 +88,11 @@ export const useAudioEngine = () => {
 
     // Right channel: oscillator -> gain -> analyser -> merger
     rightOscillatorRef.current = audioContextRef.current.createOscillator();
+    nodesRef.current.oscillators.push(rightOscillatorRef.current);
     rightGainRef.current = audioContextRef.current.createGain();
+    nodesRef.current.gains.push(rightGainRef.current);
     rightAnalyserRef.current = audioContextRef.current.createAnalyser();
+    nodesRef.current.analysers.push(rightAnalyserRef.current);
     rightAnalyserRef.current.fftSize = 2048;
     rightAnalyserRef.current.smoothingTimeConstant = 0.4;
     rightDataRef.current = new Uint8Array(rightAnalyserRef.current.frequencyBinCount);
@@ -98,7 +112,7 @@ export const useAudioEngine = () => {
     // Start oscillators
     leftOscillatorRef.current.start();
     rightOscillatorRef.current.start();
-    
+
     isPlayingRef.current = true;
   }, [initializeAudioContext]);
 
@@ -134,38 +148,36 @@ export const useAudioEngine = () => {
       masterGainRef.current.gain.setValueAtTime(0.7, now);
     }
     isPlayingRef.current = false;
+    nodesRef.current.oscillators.length = 0;
+    nodesRef.current.gains.length = 0;
+    nodesRef.current.analysers.length = 0;
+    // Note: masterGain ref is preserved so startAudio can reuse the AudioContext
   }, []);
 
-  const updateFrequency = useCallback((channel: 'left' | 'right', frequency: number) => {
+  /**
+   * Apply a fully-evaluated state to the running audio graph.
+   * Idempotent — safe to call whether or not audio is currently playing.
+   */
+  const applyState = useCallback((state: EvaluatedState) => {
     if (!audioContextRef.current || !isPlayingRef.current) return;
-    
-    const oscillator = channel === 'left' ? leftOscillatorRef.current : rightOscillatorRef.current;
-    if (oscillator) {
-      oscillator.frequency.setValueAtTime(frequency, audioContextRef.current.currentTime);
+    const now = audioContextRef.current.currentTime;
+
+    if (leftOscillatorRef.current) {
+      leftOscillatorRef.current.frequency.setValueAtTime(state.left.frequency, now);
+      leftOscillatorRef.current.type = state.left.waveform;
     }
-  }, []);
-
-  const updateAmplitude = useCallback((channel: 'left' | 'right', amplitude: number) => {
-    if (!audioContextRef.current || !isPlayingRef.current) return;
-    
-    const gainNode = channel === 'left' ? leftGainRef.current : rightGainRef.current;
-    if (gainNode) {
-      gainNode.gain.setValueAtTime(amplitude, audioContextRef.current.currentTime);
+    if (rightOscillatorRef.current) {
+      rightOscillatorRef.current.frequency.setValueAtTime(state.right.frequency, now);
+      rightOscillatorRef.current.type = state.right.waveform;
     }
-  }, []);
-
-  const updateMasterVolume = useCallback((volume: number) => {
-    if (!audioContextRef.current || !masterGainRef.current) return;
-    
-    masterGainRef.current.gain.setValueAtTime(volume, audioContextRef.current.currentTime);
-  }, []);
-
-  const updateWaveform = useCallback((channel: 'left' | 'right', type: OscillatorType) => {
-    if (!audioContextRef.current || !isPlayingRef.current) return;
-
-    const oscillator = channel === 'left' ? leftOscillatorRef.current : rightOscillatorRef.current;
-    if (oscillator) {
-      oscillator.type = type;
+    if (leftGainRef.current) {
+      leftGainRef.current.gain.setValueAtTime(state.left.amplitude, now);
+    }
+    if (rightGainRef.current) {
+      rightGainRef.current.gain.setValueAtTime(state.right.amplitude, now);
+    }
+    if (masterGainRef.current) {
+      masterGainRef.current.gain.setValueAtTime(state.masterVolume, now);
     }
   }, []);
 
@@ -185,29 +197,29 @@ export const useAudioEngine = () => {
     const sampleRate = audioContextRef.current.sampleRate;
     const length = sampleRate * duration;
     const buffer = audioContextRef.current.createBuffer(2, length, sampleRate);
-    
+
+    const { left, right } = generateWaveformSamples(
+      {
+        left: {
+          frequency: config.leftChannel.frequency,
+          waveform: config.leftChannel.waveform as EvaluatedState['left']['waveform'],
+          amplitude: config.leftChannel.amplitude,
+        },
+        right: {
+          frequency: config.rightChannel.frequency,
+          waveform: config.rightChannel.waveform as EvaluatedState['right']['waveform'],
+          amplitude: config.rightChannel.amplitude,
+        },
+        masterVolume: config.masterVolume,
+      },
+      sampleRate,
+      length,
+    );
+
     const leftChannel = buffer.getChannelData(0);
     const rightChannel = buffer.getChannelData(1);
-
-    for (let i = 0; i < length; i++) {
-      const time = i / sampleRate;
-      
-      leftChannel[i] = renderToneSample(
-        config.leftChannel.waveform,
-        config.leftChannel.frequency,
-        config.leftChannel.amplitude,
-        config.masterVolume,
-        time,
-      );
-      
-      rightChannel[i] = renderToneSample(
-        config.rightChannel.waveform,
-        config.rightChannel.frequency,
-        config.rightChannel.amplitude,
-        config.masterVolume,
-        time,
-      );
-    }
+    leftChannel.set(left);
+    rightChannel.set(right);
 
     // Convert to WAV and download
     const wav = bufferToWave(buffer, length);
@@ -232,15 +244,13 @@ export const useAudioEngine = () => {
   return {
     startAudio,
     stopAudio,
-    updateFrequency,
-    updateAmplitude,
-    updateWaveform,
-    updateMasterVolume,
+    applyState,
     exportWAV,
     getWaveformData,
     isPlaying: isPlayingRef.current,
     getAudioContext: () => audioContextRef.current,
     getMasterGain: () => masterGainRef.current,
+    getCreatedNodes: () => nodesRef.current,
   };
 };
 
