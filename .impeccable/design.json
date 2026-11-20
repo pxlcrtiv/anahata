@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-20T00:48:45Z",
+  "title": "Design System: Anahata",
+  "extensions": {
+    "colorMeta": {
+      "power-led-green": { "role": "primary", "displayName": "Power LED Green", "canonical": "#22c55e", "tonalRamp": ["#052e16", "#14532d", "#166534", "#15803d", "#16a34a", "#22c55e", "#86efac", "#f0fdf4"] },
+      "power-led-green-hover": { "role": "primary", "displayName": "Power LED Green Hover", "canonical": "#4ade80", "tonalRamp": ["#052e16", "#166534", "#15803d", "#16a34a", "#22c55e", "#4ade80", "#bbf7d0", "#f0fdf4"] },
+      "wordmark-blue": { "role": "primary", "displayName": "Wordmark Blue", "canonical": "#60a5fa", "tonalRamp": ["#172554", "#1e3a8a", "#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa", "#bfdbfe", "#eff6ff"] },
+      "transport-blue": { "role": "secondary", "displayName": "Transport Blue", "canonical": "#3b82f6", "tonalRamp": ["#172554", "#1e3a8a", "#1e40af", "#1d4ed8", "#2563eb", "#3b82f6", "#93c5fd", "#eff6ff"] },
+      "meter-cyan": { "role": "secondary", "displayName": "Left Meter Cyan", "canonical": "#22d3ee", "tonalRamp": ["#083344", "#155e75", "#0e7490", "#0891b2", "#06b6d4", "#22d3ee", "#a5f3fc", "#ecfeff"] },
+      "meter-amber": { "role": "secondary", "displayName": "Right Meter Amber", "canonical": "#fbbf24", "tonalRamp": ["#451a03", "#92400e", "#b45309", "#d97706", "#f59e0b", "#fbbf24", "#fde68a", "#fffbeb"] },
+      "trace-cyan": { "role": "secondary", "displayName": "Trace Cyan", "canonical": "#06b6d4", "tonalRamp": ["#083344", "#155e75", "#0e7490", "#0891b2", "#06b6d4", "#22d3ee", "#a5f3fc", "#ecfeff"] },
+      "trace-amber": { "role": "secondary", "displayName": "Trace Amber", "canonical": "#f59e0b", "tonalRamp": ["#451a03", "#92400e", "#b45309", "#d97706", "#f59e0b", "#fbbf24", "#fde68a", "#fffbeb"] },
+      "record-red": { "role": "secondary", "displayName": "Record Red", "canonical": "#ef4444", "tonalRamp": ["#450a0a", "#991b1b", "#b91c1c", "#dc2626", "#ef4444", "#f87171", "#fecaca", "#fef2f2"] },
+      "chassis-black": { "role": "neutral", "displayName": "Chassis Black", "canonical": "#000000", "tonalRamp": ["#000000", "#0a0a0a", "#171717", "#262626", "#404040", "#737373", "#d4d4d4", "#fafafa"] },
+      "chassis-charcoal": { "role": "neutral", "displayName": "Chassis Charcoal", "canonical": "#111827", "tonalRamp": ["#030712", "#111827", "#1f2937", "#374151", "#4b5563", "#9ca3af", "#e5e7eb", "#f9fafb"] },
+      "panel-graphite": { "role": "neutral", "displayName": "Panel Graphite", "canonical": "#1f2937", "tonalRamp": ["#030712", "#111827", "#1f2937", "#374151", "#4b5563", "#9ca3af", "#e5e7eb", "#f9fafb"] },
+      "input-graphite": { "role": "neutral", "displayName": "Input Graphite", "canonical": "#374151", "tonalRamp": ["#030712", "#111827", "#1f2937", "#374151", "#4b5563", "#9ca3af", "#e5e7eb", "#f9fafb"] },
+      "edge-gray": { "role": "neutral", "displayName": "Edge Gray", "canonical": "#4b5563", "tonalRamp": ["#030712", "#111827", "#1f2937", "#374151", "#4b5563", "#9ca3af", "#e5e7eb", "#f9fafb"] },
+      "edge-slate": { "role": "neutral", "displayName": "Edge Slate", "canonical": "#475569", "tonalRamp": ["#020617", "#0f172a", "#1e293b", "#334155", "#475569", "#94a3b8", "#e2e8f0", "#f8fafc"] },
+      "text-primary": { "role": "neutral", "displayName": "Text Primary", "canonical": "#ffffff", "tonalRamp": ["#000000", "#171717", "#262626", "#404040", "#737373", "#a3a3a3", "#e5e5e5", "#ffffff"] },
+      "text-secondary": { "role": "neutral", "displayName": "Text Secondary", "canonical": "#d1d5db", "tonalRamp": ["#030712", "#111827", "#1f2937", "#374151", "#4b5563", "#9ca3af", "#d1d5db", "#f9fafb"] },
+      "text-muted": { "role": "neutral", "displayName": "Text Muted", "canonical": "#9ca3af", "tonalRamp": ["#030712", "#111827", "#1f2937", "#374151", "#4b5563", "#9ca3af", "#e5e7eb", "#f9fafb"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The gradient-clipped Anahata wordmark — once per screen." },
+      "headline": { "displayName": "Headline", "purpose": "Section markers (e.g. Sequencer)." },
+      "title": { "displayName": "Title", "purpose": "Card titles and in-card headers." },
+      "body": { "displayName": "Body", "purpose": "Working size for controls, values, and descriptions." },
+      "label": { "displayName": "Label", "purpose": "Captions, axis notes, time readouts; never smaller." }
+    },
+    "shadows": [
+      { "name": "focal-glow", "value": "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)", "purpose": "The play disc and the slider thumb — the touchable focal points." },
+      { "name": "focal-glow-deep", "value": "0 25px 50px -12px rgba(0,0,0,0.25)", "purpose": "The player card only — the deepest shadow in the system." },
+      { "name": "structural-whisper", "value": "0 1px 2px 0 rgba(0,0,0,0.05)", "purpose": "The Card primitive's resting shadow; near-invisible on black." }
+    ],
+    "motion": [
+      { "name": "control-transition", "value": "transition: background-color 150ms ease", "purpose": "Hover/press color shifts on buttons and controls." },
+      { "name": "tile-lift", "value": "transform 200ms ease (scale 1.05 on hover)", "purpose": "Preset tiles lift slightly when reached for." },
+      { "name": "record-pulse", "value": "opacity pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite", "purpose": "The record lamp breathes while armed — state, not decoration." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "2xl", "value": "1400px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Play Disc",
+      "kind": "button",
+      "refersTo": "play-button",
+      "description": "The primary transport action — a 56px green disc carrying the system's strongest glow.",
+      "html": "<button class=\"ds-play-disc\" aria-label=\"Play\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M8 5v14l11-7z\"/></svg></button>",
+      "css": ".ds-play-disc { background: #22c55e; color: #ffffff; width: 56px; height: 56px; border: none; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1); transition: background-color 150ms ease; } .ds-play-disc:hover { background: #4ade80; } .ds-play-disc:focus-visible { outline: none; box-shadow: 0 0 0 2px #000000, 0 0 0 4px #4ade80; } .ds-play-disc:active { background: #16a34a; }"
+    },
+    {
+      "name": "Transport Button",
+      "kind": "button",
+      "refersTo": "transport-button",
+      "description": "Resting transport controls (Stop, Pause) — gray rack switches with a deliberate 4px sharpness.",
+      "html": "<button class=\"ds-transport-btn\">Stop</button>",
+      "css": ".ds-transport-btn { background: #4b5563; color: #ffffff; padding: 8px 16px; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; transition: background-color 150ms ease; } .ds-transport-btn:hover { background: #6b7280; } .ds-transport-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px #000000, 0 0 0 4px #4ade80; } .ds-transport-btn:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Transport Button Live",
+      "kind": "button",
+      "refersTo": "transport-button-live",
+      "description": "The transport bar's Play button — the lamp is on: Power LED Green with near-black text.",
+      "html": "<button class=\"ds-transport-live\">Play</button>",
+      "css": ".ds-transport-live { background: #22c55e; color: #000000; padding: 8px 16px; border: none; border-radius: 4px; font-size: 14px; font-weight: 700; cursor: pointer; transition: background-color 150ms ease; } .ds-transport-live:hover { background: #4ade80; } .ds-transport-live:focus-visible { outline: none; box-shadow: 0 0 0 2px #000000, 0 0 0 4px #4ade80; }"
+    },
+    {
+      "name": "Loop Toggle Active",
+      "kind": "button",
+      "refersTo": "loop-button-active",
+      "description": "The Loop lamp in its active mode state — Transport Blue, distinct from playback green.",
+      "html": "<button class=\"ds-loop-active\">Loop</button>",
+      "css": ".ds-loop-active { background: #3b82f6; color: #ffffff; padding: 8px 12px; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; transition: background-color 150ms ease; } .ds-loop-active:hover { background: #60a5fa; } .ds-loop-active:focus-visible { outline: none; box-shadow: 0 0 0 2px #000000, 0 0 0 4px #60a5fa; }"
+    },
+    {
+      "name": "Record Button Armed",
+      "kind": "button",
+      "refersTo": "record-button-active",
+      "description": "The recording lamp while armed — Record Red, breathing slowly. Disabled state is a dead lamp (gray-700 at half opacity).",
+      "html": "<button class=\"ds-record-armed\">■ Stop Rec</button>",
+      "css": ".ds-record-armed { background: #ef4444; color: #ffffff; padding: 8px 12px; border: none; border-radius: 4px; font-size: 14px; font-weight: 700; cursor: pointer; animation: ds-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; } .ds-record-armed:focus-visible { outline: none; box-shadow: 0 0 0 2px #000000, 0 0 0 4px #f87171; } @keyframes ds-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }"
+    },
+    {
+      "name": "Panel Card",
+      "kind": "card",
+      "refersTo": "panel-card",
+      "description": "A working panel of the chassis — transport, timeline, session. Flat Panel Graphite; no shadow.",
+      "html": "<div class=\"ds-panel-card\"><h3 class=\"ds-panel-title\">Timeline</h3><p class=\"ds-panel-note\">Panel content reads white-on-graphite.</p></div>",
+      "css": ".ds-panel-card { background: #1f2937; border-radius: 8px; padding: 16px; color: #ffffff; } .ds-panel-title { font-size: 14px; font-weight: 600; color: #d1d5db; margin: 0 0 8px 0; } .ds-panel-note { font-size: 14px; color: #9ca3af; margin: 0; }"
+    },
+    {
+      "name": "Player Card",
+      "kind": "card",
+      "refersTo": "player-card",
+      "description": "The feature card that leads the page — black glass with the system's deepest glow.",
+      "html": "<div class=\"ds-player-card\"><span class=\"ds-player-eyebrow\">Binaural Beat 8.0 Hz</span><h3 class=\"ds-player-title\">L: 200 Hz · R: 208 Hz</h3></div>",
+      "css": ".ds-player-card { background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(24px); border: 1px solid #1f2937; border-radius: 8px; padding: 24px; color: #ffffff; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); } .ds-player-eyebrow { display: block; font-size: 18px; font-weight: 600; color: #ffffff; margin-bottom: 4px; } .ds-player-title { font-size: 14px; font-weight: 400; color: #9ca3af; margin: 0; }"
+    },
+    {
+      "name": "Number Input",
+      "kind": "input",
+      "refersTo": "number-input",
+      "description": "An editable value field — Input Graphite fill is the affordance; focus lights the green ring.",
+      "html": "<input class=\"ds-number-input\" type=\"number\" value=\"10000\" />",
+      "css": ".ds-number-input { background: #374151; color: #ffffff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 14px; width: 80px; } .ds-number-input::placeholder { color: #9ca3af; } .ds-number-input:focus-visible { outline: none; box-shadow: 0 0 0 2px #4ade80; } .ds-number-input:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Meter Slider",
+      "kind": "custom",
+      "description": "The green-tuned slider primitive — gray-600 track, Power LED Green range, white disc thumb with a green ring.",
+      "html": "<div class=\"ds-slider\"><div class=\"ds-slider-track\"><div class=\"ds-slider-range\"></div><div class=\"ds-slider-thumb\"></div></div></div>",
+      "css": ".ds-slider { position: relative; display: flex; align-items: center; width: 100%; height: 20px; } .ds-slider-track { position: relative; height: 8px; width: 100%; border-radius: 9999px; background: #4b5563; } .ds-slider-range { position: absolute; height: 8px; width: 60%; border-radius: 9999px; background: #22c55e; } .ds-slider-thumb { position: absolute; top: 50%; transform: translateY(-50%); left: calc(60% - 10px); width: 20px; height: 20px; border-radius: 9999px; background: #ffffff; border: 2px solid #22c55e; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1); cursor: grab; } .ds-slider-thumb:focus-visible { outline: none; box-shadow: 0 0 0 2px #000000, 0 0 0 4px #4ade80; }"
+    },
+    {
+      "name": "Meter Legend",
+      "kind": "custom",
+      "refersTo": "meter-legend-dot",
+      "description": "The channel meter legend — cyan disc for Left, amber disc for Right, 14px labels. The Meter Pair Rule made visible.",
+      "html": "<div class=\"ds-meter-legend\"><span class=\"ds-dot ds-dot-cyan\"></span><span class=\"ds-meter-label\">Left Channel</span><span class=\"ds-dot ds-dot-amber\"></span><span class=\"ds-meter-label\">Right Channel</span></div>",
+      "css": ".ds-meter-legend { display: flex; align-items: center; gap: 8px; } .ds-dot { width: 12px; height: 12px; border-radius: 9999px; display: inline-block; } .ds-dot-cyan { background: #22d3ee; } .ds-dot-amber { background: #fbbf24; } .ds-meter-label { color: #d1d5db; font-size: 14px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Midnight Instrument",
+    "overview": "Anahata's interface is a physical instrument viewed at night: a matte-black chassis whose surfaces are flat, tonal layers of graphite, with light reserved for what is alive. The interface recedes so the sound leads — quiet, unhurried, engineered, honest. Nothing on screen claims more attention than the signal it represents.\n\nDepth is tonal, never theatrical: cards are darker or lighter strata of the chassis, sometimes translucent with a soft backdrop blur, and glow appears only where the user's attention should land — the play control, the player card, the slider thumb. The wordmark's green-to-blue gradient is the single expressive flourish; everything else earns its color by meaning something.\n\nThe system deliberately rejects the neon-purple \"spiritual glow\" aesthetic common to wellness apps. Anahata's honesty-over-hype voice extends to its visuals: the meters show the real signal, the lamps report real state, and ornament that claims nothing is left out.",
+    "keyCharacteristics": [
+      "Matte-black instrument chassis — flat tonal surfaces, soft translucency, no general elevation",
+      "One lamp vocabulary: green = live transport, cyan/amber = the channel pair, red = recording",
+      "System type stack — hierarchy by size, weight, and tone, never by added fonts",
+      "A single gradient flourish (green to blue) on the wordmark and player-tile identity",
+      "The real-signal waveform canvas as the centerpiece: instrument output, not decoration"
+    ],
+    "rules": [
+      { "name": "The One Lamp Rule", "body": "Power LED Green marks live transport actions only — play, the active range, the thumb ring. If everything is green, nothing is.", "section": "colors" },
+      { "name": "The Meter Pair Rule", "body": "Left channel is cyan, right channel is amber — legend dots, traces, and labels agree everywhere they appear. Never swap them and never add a third channel color.", "section": "colors" },
+      { "name": "The System Voice Rule", "body": "No display webfonts, ever. If a hierarchy needs more force, add size, weight, or tone — not a new typeface.", "section": "typography" },
+      { "name": "The Flat Chassis Rule", "body": "Surfaces stay flat at rest. Shadow appears only on the three focal points — play button, player card, slider thumb. Nowhere else, at any elevation.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep the chassis black/graphite — color arrives only through the lamp vocabulary.",
+      "Do use Power LED Green for live transport actions and the active slider range — the One Lamp Rule.",
+      "Do keep the cyan/amber meter pair for left/right channels everywhere both appear.",
+      "Do build text hierarchy from white to gray-300 to gray-400 tone steps, not new hues.",
+      "Do show the real signal in the visualizer — the trace is instrument output, never illustration."
+    ],
+    "donts": [
+      "Don't introduce neon purple/violet \"spiritual glow\" wellness gradients into the app chrome; preset tiles keep their individual hues as content, not decoration.",
+      "Don't use shadows for general elevation — the Flat Chassis Rule reserves glow for the play button, player card, and slider thumb.",
+      "Don't add new accent hues to the chrome beyond the lamp set (green, blue, cyan, amber, red).",
+      "Don't set text below 12px, and never shrink the meter labels to fit — shorten the copy instead."
+    ]
+  }
+}
