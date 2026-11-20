@@ -115,7 +115,6 @@
     {
       "name": "Meter Slider",
       "kind": "custom",
-      "refersTo": "play-button",
       "description": "The green-tuned slider primitive — gray-600 track, Power LED Green range, white disc thumb with a green ring.",
       "html": "<div class=\"ds-slider\"><div class=\"ds-slider-track\"><div class=\"ds-slider-range\"></div><div class=\"ds-slider-thumb\"></div></div></div>",
       "css": ".ds-slider { position: relative; display: flex; align-items: center; width: 100%; height: 20px; } .ds-slider-track { position: relative; height: 8px; width: 100%; border-radius: 9999px; background: #4b5563; } .ds-slider-range { position: absolute; height: 8px; width: 60%; border-radius: 9999px; background: #22c55e; } .ds-slider-thumb { position: absolute; top: 50%; transform: translateY(-50%); left: calc(60% - 10px); width: 20px; height: 20px; border-radius: 9999px; background: #ffffff; border: 2px solid #22c55e; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1); cursor: grab; } .ds-slider-thumb:focus-visible { outline: none; box-shadow: 0 0 0 2px #000000, 0 0 0 4px #4ade80; }"
