@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { evaluateSession } from '../sequencer/evaluate';
+import { prepareSession, evaluatePrepared } from '../sequencer/evaluate';
 import type { Session, EvaluatedState } from '../sequencer/types';
 
 const DEFAULT_SESSION: Session = {
@@ -11,7 +11,7 @@ const DEFAULT_SESSION: Session = {
 };
 
 export function useSequencer(onTick: (state: EvaluatedState) => void, onEnd?: () => void) {
-  const [session, setSession] = useState<Session>(DEFAULT_SESSION);
+  const [session, setSessionState] = useState<Session>(DEFAULT_SESSION);
   const [positionMs, setPositionMs] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -23,12 +23,24 @@ export function useSequencer(onTick: (state: EvaluatedState) => void, onEnd?: ()
   const startOffsetRef = useRef(0);
   const onTickRef = useRef(onTick);
   const onEndRef = useRef(onEnd);
+  // The transport evaluates its position every frame — prepare the session
+  // once per change instead of re-sorting its events on every tick.
+  const preparedRef = useRef(prepareSession(DEFAULT_SESSION));
 
   sessionRef.current = session;
   positionRef.current = positionMs;
   isPlayingRef.current = isPlaying;
   onTickRef.current = onTick;
   onEndRef.current = onEnd;
+
+  /** Session updates keep the prepared form in step. */
+  const setSession = useCallback((next: Session | ((prev: Session) => Session)) => {
+    setSessionState((prev) => {
+      const resolved = typeof next === 'function' ? (next as (p: Session) => Session)(prev) : next;
+      preparedRef.current = prepareSession(resolved);
+      return resolved;
+    });
+  }, []);
 
   const tick = useCallback(() => {
     if (!isPlayingRef.current) return;
@@ -49,7 +61,7 @@ export function useSequencer(onTick: (state: EvaluatedState) => void, onEnd?: ()
       setIsPlaying(false);
       positionRef.current = dur;
       setPositionMs(dur);
-      const state = evaluateSession(sessionRef.current, dur);
+      const state = evaluatePrepared(preparedRef.current, dur);
       onTickRef.current(state);
       onEndRef.current?.();
       return;
@@ -58,7 +70,7 @@ export function useSequencer(onTick: (state: EvaluatedState) => void, onEnd?: ()
     positionRef.current = currentMs;
     setPositionMs(currentMs);
 
-    const state = evaluateSession(sessionRef.current, currentMs);
+    const state = evaluatePrepared(preparedRef.current, currentMs);
     onTickRef.current(state);
 
     rafRef.current = requestAnimationFrame(tick);

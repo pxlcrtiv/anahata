@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { evaluateSession } from '../evaluate';
+import { evaluateSession, prepareSession, evaluatePrepared } from '../evaluate';
 import type { Session } from '../types';
 
 describe('evaluateSession', () => {
@@ -253,5 +253,69 @@ describe('evaluateSession', () => {
       const at6000 = evaluateSession(session, 6000);
       expect(at6000.left.frequency).toBe(300);
     });
+  });
+});
+
+describe('prepareSession / evaluatePrepared', () => {
+  const times = [0, 250, 999, 1000, 1001, 2499, 2500, 5000, 5001, 10000];
+
+  const sessions: Record<string, Session> = {
+    'empty session': { id: '1', name: 'e', durationMs: 10000, loop: false, events: [] },
+    'single discrete event': {
+      id: '1',
+      name: 'd',
+      durationMs: 10000,
+      loop: false,
+      events: [{ id: 'a', timeMs: 1000, left: { frequency: 300 }, masterVolume: 0.3 }],
+    },
+    'ramped event': {
+      id: '1',
+      name: 'r',
+      durationMs: 10000,
+      loop: false,
+      events: [
+        { id: 'a', timeMs: 0, left: { frequency: 600 }, rampMs: 2500 },
+        { id: 'b', timeMs: 2500, right: { waveform: 'square' } },
+      ],
+    },
+    'out-of-order input': {
+      id: '1',
+      name: 'o',
+      durationMs: 10000,
+      loop: false,
+      events: [
+        { id: 'late', timeMs: 5000, left: { amplitude: 0.9 } },
+        { id: 'early', timeMs: 1000, right: { frequency: 440 } },
+        { id: 'mid', timeMs: 2500, masterVolume: 0.1, rampMs: 500 },
+      ],
+    },
+    'loop session': {
+      id: '1',
+      name: 'l',
+      durationMs: 5000,
+      loop: true,
+      events: [{ id: 'a', timeMs: 1000, left: { frequency: 300 } }],
+    },
+  };
+
+  for (const [name, session] of Object.entries(sessions)) {
+    it(`matches evaluateSession exactly for: ${name}`, () => {
+      const prepared = prepareSession(session);
+      for (const t of times) {
+        expect(evaluatePrepared(prepared, t)).toEqual(evaluateSession(session, t));
+      }
+    });
+  }
+
+  it('sorts events regardless of input order', () => {
+    const prepared = prepareSession(sessions['out-of-order input']);
+    expect(prepared.sortedEvents.map((e) => e.id)).toEqual(['early', 'mid', 'late']);
+  });
+
+  it('does not mutate the input session', () => {
+    const session = sessions['out-of-order input'];
+    const before = session.events.map((e) => e.id);
+    prepareSession(session);
+    expect(session.events.map((e) => e.id)).toEqual(before);
   });
 });
