@@ -23,8 +23,8 @@ const TimelineEditor: React.FC<TimelineEditorProps> = ({
   const [editFreqR, setEditFreqR] = useState('');
   const [editAmpL, setEditAmpL] = useState('');
   const [editAmpR, setEditAmpR] = useState('');
-  const [editWaveL, setEditWaveL] = useState<Waveform>('sine');
-  const [editWaveR, setEditWaveR] = useState<Waveform>('sine');
+  const [editWaveL, setEditWaveL] = useState<Waveform | ''>('');
+  const [editWaveR, setEditWaveR] = useState<Waveform | ''>('');
   const [editMasterVol, setEditMasterVol] = useState('');
   const [editRampMs, setEditRampMs] = useState('');
 
@@ -55,8 +55,8 @@ const TimelineEditor: React.FC<TimelineEditorProps> = ({
     setEditFreqR(evt.right?.frequency !== undefined ? String(evt.right.frequency) : '');
     setEditAmpL(evt.left?.amplitude !== undefined ? String(evt.left.amplitude) : '');
     setEditAmpR(evt.right?.amplitude !== undefined ? String(evt.right.amplitude) : '');
-    setEditWaveL((evt.left?.waveform as Waveform) ?? 'sine');
-    setEditWaveR((evt.right?.waveform as Waveform) ?? 'sine');
+    setEditWaveL(evt.left?.waveform ?? '');
+    setEditWaveR(evt.right?.waveform ?? '');
     setEditMasterVol(evt.masterVolume !== undefined ? String(evt.masterVolume) : '');
     setEditRampMs(evt.rampMs !== undefined ? String(evt.rampMs) : '');
   };
@@ -73,12 +73,12 @@ const TimelineEditor: React.FC<TimelineEditorProps> = ({
       const left: Partial<{ frequency: number; waveform: Waveform; amplitude: number }> = {};
       if (editFreqL !== '') left.frequency = Number(editFreqL);
       if (editAmpL !== '') left.amplitude = Number(editAmpL);
-      left.waveform = editWaveL;
+      if (editWaveL !== '') left.waveform = editWaveL;
 
       const right: Partial<{ frequency: number; waveform: Waveform; amplitude: number }> = {};
       if (editFreqR !== '') right.frequency = Number(editFreqR);
       if (editAmpR !== '') right.amplitude = Number(editAmpR);
-      right.waveform = editWaveR;
+      if (editWaveR !== '') right.waveform = editWaveR;
 
       return {
         ...evt,
@@ -159,7 +159,8 @@ const TimelineEditor: React.FC<TimelineEditorProps> = ({
             <input value={editFreqL} onChange={(e) => setEditFreqL(e.target.value)} className="bg-gray-600 rounded px-2 py-1 w-24" />
             <label className="text-gray-400">Amp</label>
             <input value={editAmpL} onChange={(e) => setEditAmpL(e.target.value)} className="bg-gray-600 rounded px-2 py-1 w-16" />
-            <select value={editWaveL} onChange={(e) => setEditWaveL(e.target.value as Waveform)} className="bg-gray-600 rounded px-2 py-1">
+            <select value={editWaveL} onChange={(e) => setEditWaveL(e.target.value as Waveform | '')} className="bg-gray-600 rounded px-2 py-1">
+              <option value="">(unchanged)</option>
               <option value="sine">sine</option>
               <option value="square">square</option>
               <option value="triangle">triangle</option>
@@ -171,7 +172,8 @@ const TimelineEditor: React.FC<TimelineEditorProps> = ({
             <input value={editFreqR} onChange={(e) => setEditFreqR(e.target.value)} className="bg-gray-600 rounded px-2 py-1 w-24" />
             <label className="text-gray-400">Amp</label>
             <input value={editAmpR} onChange={(e) => setEditAmpR(e.target.value)} className="bg-gray-600 rounded px-2 py-1 w-16" />
-            <select value={editWaveR} onChange={(e) => setEditWaveR(e.target.value as Waveform)} className="bg-gray-600 rounded px-2 py-1">
+            <select value={editWaveR} onChange={(e) => setEditWaveR(e.target.value as Waveform | '')} className="bg-gray-600 rounded px-2 py-1">
+              <option value="">(unchanged)</option>
               <option value="sine">sine</option>
               <option value="square">square</option>
               <option value="triangle">triangle</option>
