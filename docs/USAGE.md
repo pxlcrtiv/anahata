@@ -46,10 +46,10 @@ Web Audio `AnalyserNode`. It reflects real frequency, waveform, and amplitude �
 and it freezes the last frame (flat line when no signal).
 
 ## Exporting a WAV
-The **Download** button renders the current steady-state configuration to a 16-bit
-stereo `.wav` (10 s). It reconstructs the waveform mathematically from the settings,
-so it matches what you hear at steady state — but it does not capture live fades or
-mid-playback changes.
+The **Download** button renders the current **session** to a 16-bit stereo `.wav` —
+scheduled events, linear ramps, and the full session duration, exactly what the
+transport plays (a looping session renders one full cycle). No playback is
+required first. A toast confirms the export, or reports a failure.
 
 ## Timeline sequencer
 The sequencer lets you schedule parameter changes (frequency, waveform, amplitude,

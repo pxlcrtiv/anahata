@@ -13,6 +13,9 @@ import SessionPanel from './SessionPanel';
 import { Waves } from 'lucide-react';
 import { interpolateState, DEFAULT_CROSSFADE_MS } from '../sequencer/crossfade';
 import { evaluateSession } from '../sequencer/evaluate';
+import { renderSessionToStereo, interleaveStereo } from '../audio/renderSession';
+import { encodeWAV } from '../audio/wavEncoder';
+import { useToast } from '@/hooks/use-toast';
 import { loadAutosave, saveAutosave } from '../storage/sessionStorage';
 import type { ChannelState, EvaluatedState } from '../sequencer/types';
 
@@ -46,8 +49,9 @@ const WaveGenerator = () => {
   } | null>(null);
   const lastTickStateRef = useRef<EvaluatedState | null>(null);
 
-  const { startAudio, stopAudio, applyState, exportWAV, getWaveformData, getAudioContext, getMasterGain } = useAudioEngine();
+  const { startAudio, stopAudio, applyState, getWaveformData, getAudioContext, getMasterGain } = useAudioEngine();
   const { startRecording, stopRecording, isRecording } = useRecording();
+  const { toast } = useToast();
 
   const handleSequencerTick = useCallback((state: EvaluatedState) => {
     let effectiveState = state;
@@ -233,11 +237,29 @@ const WaveGenerator = () => {
   };
 
   const handleExport = () => {
-    exportWAV({
-      leftChannel,
-      rightChannel,
-      masterVolume
-    }, 10);
+    try {
+      const rendered = renderSessionToStereo(session, 44100);
+      const interleaved = interleaveStereo(rendered.left, rendered.right);
+      const wav = encodeWAV(interleaved, 2, rendered.sampleRate);
+      const blob = new Blob([wav], { type: 'audio/wav' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `anahata-${(session.name || 'session').replace(/\s+/g, '-').toLowerCase()}-${(session.durationMs / 1000).toFixed(1)}s.wav`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({
+        title: 'Export complete',
+        description: `${(session.durationMs / 1000).toFixed(1)}s session rendered to WAV`,
+      });
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast({
+        title: 'Export failed',
+        description: 'The session could not be rendered.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleSequencerPlay = () => {
