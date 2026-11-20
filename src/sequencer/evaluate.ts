@@ -1,4 +1,4 @@
-import type { Session, EvaluatedState, ChannelState, Waveform } from './types';
+import type { Session, SessionEvent, EvaluatedState, ChannelState, Waveform } from './types';
 
 /** The baseline state a session starts from — the single home for the
  *  default channel values and master volume. */
@@ -8,10 +8,29 @@ export const BASELINE: EvaluatedState = {
   masterVolume: 0.7,
 };
 
-export function evaluateSession(session: Session, timeMs: number): EvaluatedState {
-  const t = session.loop ? timeMs % session.durationMs : timeMs;
+/**
+ * A session with its events sorted once, ready for repeated evaluation.
+ * The per-sample export and the per-frame transport both evaluate a
+ * session thousands of times; preparing once removes the repeated sort
+ * (and the allocation behind it) from every subsequent call.
+ */
+export interface PreparedSession {
+  session: Session;
+  sortedEvents: SessionEvent[];
+}
 
-  const sorted = [...session.events].sort((a, b) => a.timeMs - b.timeMs);
+export function prepareSession(session: Session): PreparedSession {
+  return {
+    session,
+    sortedEvents: [...session.events].sort((a, b) => a.timeMs - b.timeMs),
+  };
+}
+
+/** Evaluates a prepared session at timeMs. Identical semantics to
+ *  evaluateSession — the equivalence tests pin the two together. */
+export function evaluatePrepared(prepared: PreparedSession, timeMs: number): EvaluatedState {
+  const { session, sortedEvents } = prepared;
+  const t = session.loop ? timeMs % session.durationMs : timeMs;
 
   const left: ChannelState = { ...BASELINE.left };
   const right: ChannelState = { ...BASELINE.right };
@@ -22,7 +41,7 @@ export function evaluateSession(session: Session, timeMs: number): EvaluatedStat
   let prevRight: ChannelState = { ...BASELINE.right };
   let prevMasterVolume = BASELINE.masterVolume;
 
-  for (const event of sorted) {
+  for (const event of sortedEvents) {
     if (event.timeMs > t) break;
 
     // Snapshot values before this event applies
@@ -78,4 +97,13 @@ export function evaluateSession(session: Session, timeMs: number): EvaluatedStat
   }
 
   return { left, right, masterVolume };
+}
+
+/**
+ * Convenience one-shot: prepare and evaluate. Correct but sorts on every
+ * call — hot paths (the exporter's sample loop, the transport's tick)
+ * should prepare once and call evaluatePrepared.
+ */
+export function evaluateSession(session: Session, timeMs: number): EvaluatedState {
+  return evaluatePrepared(prepareSession(session), timeMs);
 }

@@ -1,4 +1,4 @@
-import { evaluateSession } from '../sequencer/evaluate';
+import { prepareSession, evaluatePrepared } from '../sequencer/evaluate';
 import type { Session, Waveform } from '../sequencer/types';
 
 const TWO_PI = 2 * Math.PI;
@@ -24,6 +24,10 @@ export function renderSessionToStereo(session: Session, sampleRate: number): Ren
   const left = new Float32Array(total);
   const right = new Float32Array(total);
 
+  // Prepare once: the sample loop evaluates thousands of times, and each
+  // call must not re-sort the session's events.
+  const prepared = prepareSession(session);
+
   const dt = 1 / sampleRate;
   const dtMs = (1 / sampleRate) * 1000;
   let phaseL = 0;
@@ -31,7 +35,7 @@ export function renderSessionToStereo(session: Session, sampleRate: number): Ren
   let tMs = 0;
 
   for (let i = 0; i < total; i++) {
-    const state = evaluateSession(session, tMs);
+    const state = evaluatePrepared(prepared, tMs);
 
     phaseL += TWO_PI * state.left.frequency * dt;
     phaseR += TWO_PI * state.right.frequency * dt;
