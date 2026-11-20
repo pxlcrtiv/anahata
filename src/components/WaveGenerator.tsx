@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useAudioEngine } from '../hooks/useAudioEngine';
 import { useSequencer } from '../hooks/useSequencer';
 import { useRecording } from '../audio/recording';
@@ -13,23 +13,29 @@ import SessionPanel from './SessionPanel';
 import { Waves } from 'lucide-react';
 import { interpolateState, DEFAULT_CROSSFADE_MS } from '../sequencer/crossfade';
 import { evaluateSession } from '../sequencer/evaluate';
+import { loadAutosave, saveAutosave } from '../storage/sessionStorage';
 import type { ChannelState, EvaluatedState } from '../sequencer/types';
 
 const WaveGenerator = () => {
+  // Restore the last autosaved session and settings on first render.
+  const restoredRef = useRef(loadAutosave());
+
   const [isPlaying, setIsPlaying] = useState(false);
-  const [leftChannel, setLeftChannel] = useState<ChannelState>({
-    frequency: 528,
-    waveform: 'sine',
-    amplitude: 0.5
-  });
-  const [rightChannel, setRightChannel] = useState<ChannelState>({
-    frequency: 528,
-    waveform: 'sine',
-    amplitude: 0.5
-  });
-  const [linkedChannels, setLinkedChannels] = useState(true);
-  const [masterVolume, setMasterVolume] = useState(0.7);
-  const [crossfadeMs, setCrossfadeMs] = useState(DEFAULT_CROSSFADE_MS);
+  const [leftChannel, setLeftChannel] = useState<ChannelState>(
+    () => restoredRef.current?.settings.left ?? { frequency: 528, waveform: 'sine', amplitude: 0.5 }
+  );
+  const [rightChannel, setRightChannel] = useState<ChannelState>(
+    () => restoredRef.current?.settings.right ?? { frequency: 528, waveform: 'sine', amplitude: 0.5 }
+  );
+  const [linkedChannels, setLinkedChannels] = useState(
+    () => restoredRef.current?.settings.linked ?? true
+  );
+  const [masterVolume, setMasterVolume] = useState(
+    () => restoredRef.current?.settings.masterVolume ?? 0.7
+  );
+  const [crossfadeMs, setCrossfadeMs] = useState(
+    () => restoredRef.current?.settings.crossfadeMs ?? DEFAULT_CROSSFADE_MS
+  );
 
   const sequencerRunningRef = useRef(false);
   const crossfadeRef = useRef<{
@@ -92,6 +98,25 @@ const WaveGenerator = () => {
     stop: sequencerStop,
     seek,
   } = useSequencer(handleSequencerTick, handleSequencerEnd);
+
+  // Restore the last autosaved session once on mount.
+  useEffect(() => {
+    const restored = restoredRef.current;
+    if (restored) {
+      setSession(restored.session);
+    }
+  }, [setSession]);
+
+  // Debounced autosave: the working session and settings survive reloads.
+  useEffect(() => {
+    const id = setTimeout(() => {
+      saveAutosave({
+        session,
+        settings: { left: leftChannel, right: rightChannel, linked: linkedChannels, masterVolume, crossfadeMs },
+      });
+    }, 500);
+    return () => clearTimeout(id);
+  }, [session, leftChannel, rightChannel, linkedChannels, masterVolume, crossfadeMs]);
 
   const handlePlay = async () => {
     if (isPlaying) {
