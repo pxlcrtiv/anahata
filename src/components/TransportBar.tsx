@@ -86,6 +86,7 @@ const TransportBar: React.FC<TransportBarProps> = ({
         type="number"
         value={durationMs}
         onChange={(e) => onDurationChange(Number(e.target.value))}
+        aria-label="Session duration (ms)"
         className="w-20 bg-gray-700 rounded px-2 py-1 text-sm"
         min={1000}
         step={1000}
