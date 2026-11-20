@@ -70,6 +70,18 @@ const WaveGenerator = () => {
     }
   }, [startAudio, applyState]);
 
+  const handleSequencerEnd = useCallback(() => {
+    // Natural end of a non-loop session: the sequencer stopped itself;
+    // stop the engine with the standard fade, drop the first-tick
+    // latch, and stop any active recording.
+    sequencerRunningRef.current = false;
+    stopAudio();
+    setIsPlaying(false);
+    if (isRecording) {
+      stopRecording();
+    }
+  }, [stopAudio, stopRecording, isRecording]);
+
   const {
     session,
     setSession,
@@ -79,7 +91,7 @@ const WaveGenerator = () => {
     pause: sequencerPause,
     stop: sequencerStop,
     seek,
-  } = useSequencer(handleSequencerTick);
+  } = useSequencer(handleSequencerTick, handleSequencerEnd);
 
   const handlePlay = async () => {
     if (isPlaying) {
