@@ -14,7 +14,7 @@ Canonical five roles, label string == name: `needs-triage`, `needs-info`, `ready
 
 ### Domain docs
 
-Single-context layout: `CONTEXT.md` at repo root is the domain glossary; ADRs live in `docs/adr/`. See `docs/agents/domain.md`.
+Single-context layout: `CONTEXT.md` at repo root is the domain glossary; ADRs live in `docs/adr/`. Neither exists yet — both are created lazily by the domain-modeling skills when a term or decision actually resolves (see `docs/agents/domain.md`, which says to proceed silently while they are absent).
 
 ## Engineering flow (Matt Pocock skills)
 

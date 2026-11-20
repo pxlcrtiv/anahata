@@ -16,6 +16,16 @@ test.describe('Anahata smoke', () => {
     await page.screenshot({ path: 'test-results/landing-load.png', fullPage: true });
   });
 
+  test('404 stays on the instrument chassis and links back', async ({ page }) => {
+    await page.goto('/definitely-not-a-route');
+
+    await expect(page.getByRole('heading', { level: 1, name: '404' })).toBeVisible();
+    await expect(page.getByText(/isn't part of the instrument/)).toBeVisible();
+
+    await page.getByRole('link', { name: /Back to the studio/ }).click();
+    await expect(page).toHaveURL(/\/$/);
+  });
+
   test('loads with the wordmark and transport', async ({ page }) => {
     await page.goto('/app');
 

@@ -37,6 +37,15 @@
         ],
         "createdAt": "2026-11-20T02:42:16.145Z",
         "reason": "DESIGN.md Overview: the wordmark's green-to-blue gradient is the system's single documented expressive flourish — the incumbent app header mark."
+      },
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "src/components/Wordmark.tsx"
+        ],
+        "createdAt": "2026-11-20T04:45:03.199Z",
+        "reason": "DESIGN.md Overview: the wordmark's green-to-blue gradient is the system's single documented expressive flourish — the extracted one-implementation brand mark."
       }
     ]
   }

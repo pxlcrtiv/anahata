@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Waves, Activity, SlidersHorizontal, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Activity, SlidersHorizontal, ShieldCheck, ArrowRight } from 'lucide-react';
+import Wordmark from '../components/Wordmark';
 import { focusRing } from '@/lib/focus';
 
 const Landing = () => {
@@ -10,12 +11,7 @@ const Landing = () => {
       <main className="max-w-3xl mx-auto px-6 py-24 space-y-24">
         {/* Hero — the one authored motion moment */}
         <section className="text-center space-y-6 animate-[hero-rise_700ms_cubic-bezier(0.16,1,0.3,1)_both]">
-          <div className="flex items-center justify-center gap-3">
-            <Waves className="w-10 h-10 text-green-400" aria-hidden="true" />
-            <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
-              Anahata
-            </h1>
-          </div>
+          <Wordmark className="text-5xl md:text-6xl" />
           <p className="text-xl text-gray-300">The unstruck sound.</p>
           <p className="text-base text-gray-400 max-w-xl mx-auto leading-relaxed">
             A free, browser-based binaural tone studio. Two independent channels, real signal

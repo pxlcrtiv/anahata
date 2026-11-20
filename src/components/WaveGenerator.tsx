@@ -8,7 +8,7 @@ import WaveformVisualizer from './WaveformVisualizer';
 import TransportBar from './TransportBar';
 import TimelineEditor from './TimelineEditor';
 import SessionPanel from './SessionPanel';
-import { Waves } from 'lucide-react';
+import Wordmark from './Wordmark';
 import { DEFAULT_CROSSFADE_MS } from '../sequencer/crossfade';
 import { BASELINE } from '../sequencer/evaluate';
 import { renderSessionToStereo, interleaveStereo } from '../audio/renderSession';
@@ -202,12 +202,7 @@ const WaveGenerator = () => {
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900 p-4 space-y-6">
       {/* Header */}
       <div className="text-center py-8">
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <Waves className="w-10 h-10 text-green-400" />
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
-            Anahata
-          </h1>
-        </div>
+        <Wordmark wrapperClassName="mb-4" />
         <p className="text-gray-400 text-lg max-w-2xl mx-auto">
           Dual-channel wave generator for binaural beats and audio experimentation
         </p>
