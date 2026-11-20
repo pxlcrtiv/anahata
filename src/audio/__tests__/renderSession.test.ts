@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { renderSessionToStereo, interleaveStereo } from '../renderSession';
+import { renderSessionToStereo } from '../renderSession';
 import type { Session } from '../../sequencer/types';
 
 const SR = 1000; // 1 kHz — keeps the math cheap and exact
@@ -103,13 +103,5 @@ describe('renderSessionToStereo', () => {
       maxAbs = Math.max(maxAbs, Math.abs(out.left[i]));
     }
     expect(maxAbs).toBeCloseTo(peak, 5);
-  });
-});
-
-describe('interleaveStereo', () => {
-  it('interleaves left and right sample by sample', () => {
-    const left = new Float32Array([1, 2, 3]);
-    const right = new Float32Array([4, 5, 6]);
-    expect(Array.from(interleaveStereo(left, right))).toEqual([1, 4, 2, 5, 3, 6]);
   });
 });

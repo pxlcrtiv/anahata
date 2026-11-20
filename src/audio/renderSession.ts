@@ -18,6 +18,11 @@ export interface RenderedSession {
  * advances the channel phase by the *instantaneous* frequency, so a ramped
  * tone glides instead of warbling the way time-based sin(2πft) does when f
  * changes. Loop sessions render exactly one cycle.
+ *
+ * Synchronous rendering on the caller's thread is a documented decision
+ * (issue #45): after the sort removal, typical sessions render in well
+ * under a second; a worker or chunked render is the recorded follow-up
+ * if long sessions ever need it.
  */
 export function renderSessionToStereo(session: Session, sampleRate: number): RenderedSession {
   const total = Math.max(1, Math.floor((session.durationMs / 1000) * sampleRate));
@@ -64,12 +69,5 @@ function waveSample(waveform: Waveform, phase: number): number {
   }
 }
 
-/** Interleaves left/right sample arrays into one L,R,L,R,… array. */
-export function interleaveStereo(left: Float32Array, right: Float32Array): Float32Array {
-  const out = new Float32Array(left.length * 2);
-  for (let i = 0; i < left.length; i++) {
-    out[i * 2] = left[i];
-    out[i * 2 + 1] = right[i];
-  }
-  return out;
-}
+/** Interleaves left/right sample arrays into one L,R,L,R,… array —
+ *  see wavEncoder, which owns the WAV-prep helpers. */

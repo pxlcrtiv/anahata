@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { encodeWAV } from '../wavEncoder';
+import { encodeWAV, interleaveStereo, encodeStereoBlob } from '../wavEncoder';
 
 describe('encodeWAV', () => {
   it('writes correct RIFF/WAVE header for 1 channel', () => {
@@ -113,5 +113,23 @@ describe('encodeWAV', () => {
     const buf = encodeWAV(samples, 1, sampleRate);
     // 44 header + 44100 * 2 data = 88244
     expect(buf.byteLength).toBe(44 + numSamples * 2);
+  });
+});
+
+describe('interleaveStereo', () => {
+  it('interleaves left and right sample by sample', () => {
+    const left = new Float32Array([1, 2, 3]);
+    const right = new Float32Array([4, 5, 6]);
+    expect(Array.from(interleaveStereo(left, right))).toEqual([1, 4, 2, 5, 3, 6]);
+  });
+});
+
+describe('encodeStereoBlob', () => {
+  it('builds a stereo WAV blob with the exact byte length', () => {
+    const left = new Float32Array(100).fill(0.5);
+    const right = new Float32Array(100).fill(-0.5);
+    const blob = encodeStereoBlob(left, right, 44100);
+    expect(blob.type).toBe('audio/wav');
+    expect(blob.size).toBe(44 + 100 * 2 * 2);
   });
 });

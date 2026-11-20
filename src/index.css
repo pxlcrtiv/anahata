@@ -102,9 +102,11 @@
   }
 
   /* Browser surfaces carry the design: selection and scrollbars are the
-     instrument's, not the platform's defaults. */
+     instrument's, not the platform's defaults. The selection tint is a
+     neutral (text-primary), keeping the lamp green reserved per the
+     One Lamp Rule. */
   ::selection {
-    background: rgba(34, 197, 94, 0.35);
+    background: rgba(255, 255, 255, 0.22);
   }
 
   html {

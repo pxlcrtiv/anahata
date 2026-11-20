@@ -38,7 +38,7 @@ function validateEvent(event: unknown, index: number): void {
     throw new Error(`Invalid event #${index}: id must be a string`);
   }
   if (!isFiniteNumber(e.timeMs)) {
-    throw new Error('Invalid event: timeMs must be a finite number');
+    throw new Error(`Invalid event #${index}: timeMs must be a finite number`);
   }
   if (e.rampMs !== undefined && !isFiniteNumber(e.rampMs)) {
     throw new Error('Invalid event: rampMs must be a finite number');
@@ -67,7 +67,7 @@ export function deserializeSession(json: string): Session {
     typeof parsed !== 'object' ||
     typeof parsed.id !== 'string' ||
     typeof parsed.name !== 'string' ||
-    typeof parsed.durationMs !== 'number' ||
+    !isFiniteNumber(parsed.durationMs) ||
     typeof parsed.loop !== 'boolean' ||
     !Array.isArray(parsed.events)
   ) {

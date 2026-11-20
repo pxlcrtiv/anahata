@@ -51,6 +51,11 @@ describe('serializeSession / deserializeSession', () => {
   it('throws on missing required fields', () => {
     expect(() => deserializeSession('{}')).toThrow();
   });
+
+  it('rejects a non-finite durationMs (1e999 parses to Infinity)', () => {
+    const raw = '{"id":"s","name":"N","durationMs":1e999,"loop":false,"events":[]}';
+    expect(() => deserializeSession(raw)).toThrow('Invalid session JSON');
+  });
 });
 
 describe('event-item validation', () => {

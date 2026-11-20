@@ -27,8 +27,9 @@ describe('WaveGenerator — session export', () => {
     const createObjectURL = URL.createObjectURL as unknown as ReturnType<typeof vi.fn>;
     const wavBlob = createObjectURL.mock.calls[0][0] as Blob;
     expect(wavBlob.type).toBe('audio/wav');
-    // WAV header (44 bytes) plus 10 s of silence-rendered session data.
-    expect(wavBlob.size).toBeGreaterThan(44);
+    // Exact byte length proves the render math end-to-end: the default
+    // 10 s session at 44.1 kHz stereo 16-bit.
+    expect(wavBlob.size).toBe(44 + 44100 * 10 * 2 * 2);
     expect(clickSpy).toHaveBeenCalledTimes(1);
     expect(URL.revokeObjectURL).toHaveBeenCalledTimes(1);
   });

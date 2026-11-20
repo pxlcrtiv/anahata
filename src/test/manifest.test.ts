@@ -7,18 +7,46 @@ const root = process.cwd();
 const publicDir = resolve(root, 'public');
 const indexHtml = readFileSync(resolve(root, 'index.html'), 'utf-8');
 
-/** Parses a PNG's IHDR chunk and returns { width, height }. */
-function pngDimensions(buffer: Buffer): { width: number; height: number } {
+interface DecodedPng {
+  width: number;
+  height: number;
+  data: Buffer; // raw scanlines: [filter byte | RGBA * width] * height
+}
+
+/** Decodes a filter-0 RGBA PNG once; pixels are read from the result. */
+function decodePng(path: string): DecodedPng {
+  const buffer = readFileSync(path);
   const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
   for (let i = 0; i < PNG_SIGNATURE.length; i++) {
     expect(buffer[i]).toBe(PNG_SIGNATURE[i]);
   }
-  // IHDR is always the first chunk: length(4) + 'IHDR' + width(4) + height(4)
   expect(buffer.slice(12, 16).toString('ascii')).toBe('IHDR');
-  return {
-    width: buffer.readUInt32BE(16),
-    height: buffer.readUInt32BE(20),
-  };
+
+  let offset = 8;
+  let idat: Buffer | null = null;
+  let width = 0;
+  let height = 0;
+  while (offset < buffer.length) {
+    const length = buffer.readUInt32BE(offset);
+    const type = buffer.slice(offset + 4, offset + 8).toString('ascii');
+    if (type === 'IHDR') {
+      width = buffer.readUInt32BE(offset + 8);
+      height = buffer.readUInt32BE(offset + 12);
+    }
+    if (type === 'IDAT') {
+      const chunk = buffer.slice(offset + 8, offset + 8 + length);
+      idat = idat ? Buffer.concat([idat, chunk]) : chunk;
+    }
+    offset += 12 + length;
+    if (type === 'IEND') break;
+  }
+  return { width, height, data: inflateSync(idat!) };
+}
+
+function pixelAt(decoded: DecodedPng, x: number, y: number): [number, number, number, number] {
+  const stride = decoded.width * 4 + 1;
+  const p = y * stride + 1 + x * 4;
+  return [decoded.data[p], decoded.data[p + 1], decoded.data[p + 2], decoded.data[p + 3]];
 }
 
 describe('PWA manifest', () => {
@@ -56,8 +84,8 @@ describe('PWA manifest', () => {
     for (const icon of manifest.icons) {
       const path = resolve(publicDir, icon.src.replace(/^\//, ''));
       expect(existsSync(path), icon.src).toBe(true);
-      const { width, height } = pngDimensions(readFileSync(path));
-      expect(`${width}x${height}`).toBe(icon.sizes);
+      const decoded = decodePng(path);
+      expect(`${decoded.width}x${decoded.height}`).toBe(icon.sizes);
     }
   });
 });
@@ -75,54 +103,50 @@ describe('iOS installability', () => {
 });
 
 describe('icon rendering', () => {
-  /** Decodes a filter-0 RGBA PNG and samples one pixel. */
-  function readPixel(path: string, x: number, y: number): [number, number, number, number] {
-    const buffer = readFileSync(path);
-    // Walk chunks to IDAT.
-    let offset = 8;
-    let idat: Buffer | null = null;
-    let width = 0;
-    while (offset < buffer.length) {
-      const length = buffer.readUInt32BE(offset);
-      const type = buffer.slice(offset + 4, offset + 8).toString('ascii');
-      if (type === 'IHDR') width = buffer.readUInt32BE(offset + 8);
-      if (type === 'IDAT') {
-        idat = idat
-          ? Buffer.concat([idat, buffer.slice(offset + 8, offset + 8 + length)])
-          : buffer.slice(offset + 8, offset + 8 + length);
-      }
-      offset += 12 + length;
-      if (type === 'IEND') break;
-    }
-    const raw = inflateSync(idat!);
-    const stride = width * 4 + 1;
-    const p = y * stride + 1 + x * 4;
-    return [raw[p], raw[p + 1], raw[p + 2], raw[p + 3]];
-  }
-
   it('renders the green play disc, dark glyph, and transparent corners', () => {
-    const path = resolve(publicDir, 'icons/icon-512.png');
+    const decoded = decodePng(resolve(publicDir, 'icons/icon-512.png'));
 
     // A point on the disc, clear of the glyph: (0.5, 0.25) normalized.
-    const [r, g, b, a] = readPixel(path, 256, 128);
+    const [r, g, b, a] = pixelAt(decoded, 256, 128);
     expect(a).toBe(255);
     expect(r).toBe(0x22);
     expect(g).toBe(0xc5);
     expect(b).toBe(0x5e);
 
     // The glyph center: (0.5, 0.5) normalized.
-    const glyph = readPixel(path, 256, 256);
+    const glyph = pixelAt(decoded, 256, 256);
     expect(glyph[3]).toBe(255);
     expect(glyph[0] + glyph[1] + glyph[2]).toBe(0);
 
     // The chassis: black, opaque, on the rounded square.
-    const chassis = readPixel(path, 20, 256);
+    const chassis = pixelAt(decoded, 20, 256);
     expect(chassis[3]).toBe(255);
     expect(chassis[0] + chassis[1] + chassis[2]).toBe(0);
 
     // Outside the rounded square: transparent.
-    const corner = readPixel(path, 2, 2);
+    const corner = pixelAt(decoded, 2, 2);
     expect(corner[3]).toBe(0);
+  });
+
+  it('is maskable-safe: every green pixel sits inside the launcher safe zone', () => {
+    // Launchers may crop maskable icons to the central 80% (radius 0.40
+    // of the canvas). The green disc is the content that must survive.
+    const decoded = decodePng(resolve(publicDir, 'icons/icon-512.png'));
+    const center = decoded.width / 2;
+    const safeRadius = 0.4 * decoded.width;
+
+    let maxGreenRadius = 0;
+    for (let y = 0; y < decoded.height; y++) {
+      for (let x = 0; x < decoded.width; x++) {
+        const [r, g, b, a] = pixelAt(decoded, x, y);
+        if (a > 128 && g > 100 && g > r && g > b) {
+          const dist = Math.hypot(x + 0.5 - center, y + 0.5 - center);
+          if (dist > maxGreenRadius) maxGreenRadius = dist;
+        }
+      }
+    }
+    expect(maxGreenRadius).toBeGreaterThan(0);
+    expect(maxGreenRadius).toBeLessThan(safeRadius);
   });
 });
 

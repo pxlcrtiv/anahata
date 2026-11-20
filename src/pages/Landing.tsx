@@ -15,7 +15,7 @@ const Landing = () => {
           <p className="text-xl text-gray-300">The unstruck sound.</p>
           <p className="text-base text-gray-400 max-w-xl mx-auto leading-relaxed">
             A free, browser-based binaural tone studio. Two independent channels, real signal
-            visualization, and a timeline sequencer — no sign-up, nothing to install.
+            visualization, and a timeline sequencer — no sign-up required.
           </p>
           <Link
             to="/app"
@@ -29,7 +29,7 @@ const Landing = () => {
         {/* What it is — three factual claims, no hype */}
         <section className="grid md:grid-cols-3 gap-8">
           <div className="space-y-3">
-            <Activity className="w-6 h-6 text-cyan-400" aria-hidden="true" />
+            <Activity className="w-6 h-6 text-gray-400" aria-hidden="true" />
             <h2 className="text-lg font-semibold">The signal you see is the signal you hear</h2>
             <p className="text-sm text-gray-400 leading-relaxed">
               The visualizer draws the live output of both channels, tapped straight from the
@@ -37,7 +37,7 @@ const Landing = () => {
             </p>
           </div>
           <div className="space-y-3">
-            <SlidersHorizontal className="w-6 h-6 text-amber-400" aria-hidden="true" />
+            <SlidersHorizontal className="w-6 h-6 text-gray-400" aria-hidden="true" />
             <h2 className="text-lg font-semibold">Preset-simple, instrument-deep</h2>
             <p className="text-sm text-gray-400 leading-relaxed">
               One click gets you a true binaural beat — audible carriers, real offset. Go
@@ -46,7 +46,7 @@ const Landing = () => {
             </p>
           </div>
           <div className="space-y-3">
-            <ShieldCheck className="w-6 h-6 text-green-400" aria-hidden="true" />
+            <ShieldCheck className="w-6 h-6 text-gray-400" aria-hidden="true" />
             <h2 className="text-lg font-semibold">Runs in your browser, stays there</h2>
             <p className="text-sm text-gray-400 leading-relaxed">
               Nothing to sign up for and nothing leaves your device — sessions live in your

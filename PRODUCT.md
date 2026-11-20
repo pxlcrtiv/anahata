@@ -42,15 +42,16 @@ Confirmed functionality:
 - Dual-channel oscillators, 1 Hz – 20 kHz, sine/square/triangle/sawtooth per channel; Linked mode keeps channels in lockstep, unlinked allows independent control.
 - Frequency presets: brainwave bands (Alpha, Theta), Solfeggio, 432 Hz, chakra tones.
 - Per-channel amplitude + master volume; stop applies a ~20 ms fade to avoid clicks.
-- WAV export: renders the steady-state config to a 16-bit stereo 10 s file.
+- WAV export: renders the current session — events, ramps, and full duration — to a 16-bit stereo `.wav`.
 - Timeline sequencer: scheduled events for frequency, waveform, amplitude, and master volume at timestamps; linear `rampMs` interpolation; loop mode; transport (play/pause/stop/seek); visual timeline editor with add/edit/delete.
-- Session persistence: save/load to `localStorage`, export/import as JSON.
-- Vitest unit tests over the pure sequencer evaluation logic (`src/sequencer/__tests__/`).
+- Session persistence: save/load to `localStorage`, export/import as JSON; the working session and settings autosave and restore on reload.
+- Vitest unit and integration tests across the sequencer, storage, transport, and components; Playwright E2E smoke tests in CI.
+- Installable as a PWA (home screen on iOS/Android) with an offline shell.
 
 Known constraints (Web Audio limits, not product choices):
 
 - Waveform changes snap immediately — oscillator type cannot be morphed.
-- WAV export renders the steady-state settings, not live fades or mid-playback changes.
+- WAV export renders the scheduled session — events, ramps, duration — not live crossfades or mid-playback manual tweaks.
 
 ## Brand Commitments
 
