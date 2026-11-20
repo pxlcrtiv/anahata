@@ -6,5 +6,20 @@
       "maxFindings": 5,
       "maxChars": 8000
     }
+  },
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "ai-color-palette",
+        "value": "*",
+        "files": [
+          "src/components/FrequencyPresets.tsx"
+        ],
+        "createdAt": "2026-11-20T02:32:44.380Z",
+        "reason": "DESIGN.md, user-confirmed at the document flow: preset tile hues are sanctioned content, not chrome. Findings carry no value token, so file scope is the narrowest granularity this rule supports; the file renders only preset tiles and their form."
+      }
+    ]
   }
 }

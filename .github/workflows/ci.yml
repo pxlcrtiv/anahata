@@ -46,3 +46,11 @@ jobs:
 
       - name: E2E smoke (builds, previews, runs headless)
         run: npx playwright test
+
+      - name: Upload rendered evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rendered-evidence
+          path: test-results/
+          retention-days: 7

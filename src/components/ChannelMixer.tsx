@@ -62,9 +62,10 @@ const ChannelMixer: React.FC<ChannelMixerProps> = ({
 
             <div className="space-y-3">
               <div>
-                <Label className="text-gray-300 text-sm">Frequency</Label>
+                <Label htmlFor="left-frequency" className="text-gray-300 text-sm">Frequency</Label>
                 <div className="flex gap-2 mt-1">
                   <Input
+                    id="left-frequency"
                     type="number"
                     value={leftChannel.frequency}
                     onChange={(e) => onLeftChannelChange({ frequency: Number(e.target.value) })}
@@ -86,11 +87,11 @@ const ChannelMixer: React.FC<ChannelMixerProps> = ({
 
               <div>
                 <Label className="text-gray-300 text-sm">Waveform</Label>
-                <Select 
-                  value={leftChannel.waveform} 
+                <Select
+                  value={leftChannel.waveform}
                   onValueChange={(value) => onLeftChannelChange({ waveform: value })}
                 >
-                  <SelectTrigger className="bg-gray-800 border-gray-600 text-white mt-1">
+                  <SelectTrigger aria-label="Left waveform" className="bg-gray-800 border-gray-600 text-white mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-600">
@@ -107,6 +108,7 @@ const ChannelMixer: React.FC<ChannelMixerProps> = ({
                 <Slider
                   value={[leftChannel.amplitude]}
                   onValueChange={(value) => onLeftChannelChange({ amplitude: value[0] })}
+                  aria-label="Left amplitude"
                   min={0}
                   max={1}
                   step={0.01}
@@ -129,9 +131,10 @@ const ChannelMixer: React.FC<ChannelMixerProps> = ({
 
             <div className="space-y-3">
               <div>
-                <Label className="text-gray-300 text-sm">Frequency</Label>
+                <Label htmlFor="right-frequency" className="text-gray-300 text-sm">Frequency</Label>
                 <div className="flex gap-2 mt-1">
                   <Input
+                    id="right-frequency"
                     type="number"
                     value={rightChannel.frequency}
                     onChange={(e) => onRightChannelChange({ frequency: Number(e.target.value) })}
@@ -155,12 +158,12 @@ const ChannelMixer: React.FC<ChannelMixerProps> = ({
 
               <div>
                 <Label className="text-gray-300 text-sm">Waveform</Label>
-                <Select 
-                  value={rightChannel.waveform} 
+                <Select
+                  value={rightChannel.waveform}
                   onValueChange={(value) => onRightChannelChange({ waveform: value })}
                   disabled={linkedChannels}
                 >
-                  <SelectTrigger className="bg-gray-800 border-gray-600 text-white mt-1">
+                  <SelectTrigger aria-label="Right waveform" className="bg-gray-800 border-gray-600 text-white mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-600">
@@ -177,6 +180,7 @@ const ChannelMixer: React.FC<ChannelMixerProps> = ({
                 <Slider
                   value={[rightChannel.amplitude]}
                   onValueChange={(value) => onRightChannelChange({ amplitude: value[0] })}
+                  aria-label="Right amplitude"
                   min={0}
                   max={1}
                   step={0.01}
@@ -190,13 +194,13 @@ const ChannelMixer: React.FC<ChannelMixerProps> = ({
 
         {/* Binaural Beat Info */}
         {Math.abs(leftChannel.frequency - rightChannel.frequency) > 0 && (
-          <div className="mt-6 p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg border border-purple-500/30">
+          <div className="mt-6 p-4 bg-gray-800 rounded-lg border border-gray-700">
             <div className="text-center">
               <div className="text-white font-medium text-lg">
                 Binaural Beat: {Math.abs(leftChannel.frequency - rightChannel.frequency).toFixed(1)} Hz
               </div>
               <div className="text-gray-300 text-sm mt-1">
-                Perfect for meditation and brainwave entrainment
+                Audible with headphones — the beat is the difference between the channels
               </div>
             </div>
           </div>

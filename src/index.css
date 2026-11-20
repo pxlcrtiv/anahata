@@ -100,4 +100,15 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Browser surfaces carry the design: selection and scrollbars are the
+     instrument's, not the platform's defaults. */
+  ::selection {
+    background: rgba(34, 197, 94, 0.35);
+  }
+
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: #374151 transparent;
+  }
 }

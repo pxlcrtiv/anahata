@@ -168,6 +168,8 @@ const WaveformVisualizer: React.FC<WaveformVisualizerProps> = ({
         <div className="relative">
           <canvas
             ref={canvasRef}
+            role="img"
+            aria-label="Live waveform — real signal from both channels"
             className="w-full h-64 bg-slate-900/50 rounded-lg border border-slate-700"
             style={{ width: '100%', height: '256px' }}
           />

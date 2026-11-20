@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { focusRing } from '@/lib/focus';
 import { serializeSession, deserializeSession } from '../sequencer/session';
 import type { Session } from '../sequencer/types';
 
@@ -40,6 +41,7 @@ const saveSessions = (sessions: Session[]) => {
 const SessionPanel: React.FC<SessionPanelProps> = ({ session, onChangeSession, crossfadeMs, onCrossfadeMsChange }) => {
   const [name, setName] = useState(session.name);
   const [savedList, setSavedList] = useState<Session[]>(loadSessions);
+  const [error, setError] = useState('');
 
   // Track the session identity as it changes (restore on mount, load, import).
   // Typing only touches local state, so this never clobbers the input.
@@ -48,6 +50,7 @@ const SessionPanel: React.FC<SessionPanelProps> = ({ session, onChangeSession, c
   }, [session.name]);
 
   const handleSave = () => {
+    setError('');
     const toSave = { ...session, name };
     const existing = savedList.findIndex((s) => s.id === toSave.id);
     const next = existing >= 0
@@ -59,6 +62,7 @@ const SessionPanel: React.FC<SessionPanelProps> = ({ session, onChangeSession, c
   };
 
   const handleLoad = (s: Session) => {
+    setError('');
     onChangeSession(s);
     setName(s.name);
   };
@@ -82,6 +86,7 @@ const SessionPanel: React.FC<SessionPanelProps> = ({ session, onChangeSession, c
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setError('');
     const reader = new FileReader();
     reader.onload = () => {
       try {
@@ -89,7 +94,7 @@ const SessionPanel: React.FC<SessionPanelProps> = ({ session, onChangeSession, c
         onChangeSession(imported);
         setName(imported.name);
       } catch {
-        alert('Invalid session file: not a valid Anahata session');
+        setError('Invalid session file: not a valid Anahata session');
       }
     };
     reader.readAsText(file);
@@ -101,19 +106,20 @@ const SessionPanel: React.FC<SessionPanelProps> = ({ session, onChangeSession, c
       <div className="flex items-center gap-2">
         <input
           value={name}
+          aria-label="Session name"
           onChange={(e) => setName(e.target.value)}
           className="bg-gray-700 rounded px-3 py-1 text-sm flex-1"
           placeholder="Session name"
         />
-        <button onClick={handleSave} className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-sm text-white">
+        <button onClick={handleSave} className={`px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-sm text-white ${focusRing} focus-visible:ring-blue-400`}>
           Save
         </button>
-        <button onClick={handleExport} className="px-3 py-1 bg-gray-600 hover:bg-gray-500 rounded text-sm">
+        <button onClick={handleExport} className={`px-3 py-1 bg-gray-600 hover:bg-gray-500 rounded text-sm text-white ${focusRing} focus-visible:ring-white`}>
           Export
         </button>
-        <label className="px-3 py-1 bg-gray-600 hover:bg-gray-500 rounded text-sm cursor-pointer">
+        <label className="px-3 py-1 bg-gray-600 hover:bg-gray-500 rounded text-sm text-white cursor-pointer focus-within:ring-2 focus-within:ring-white focus-within:ring-offset-2">
           Import
-          <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+          <input type="file" accept=".json" onChange={handleImport} className="sr-only" />
         </label>
       </div>
       <div className="flex items-center gap-2 text-sm">
@@ -129,11 +135,12 @@ const SessionPanel: React.FC<SessionPanelProps> = ({ session, onChangeSession, c
         />
         <span className="text-gray-500">ms</span>
       </div>
+      {error && <p className="text-red-400 text-xs" role="alert">{error}</p>}
       {savedList.length > 0 && (
         <div className="space-y-1 max-h-40 overflow-y-auto">
           {savedList.map((s) => (
             <div key={s.id} className="flex items-center gap-2 text-sm">
-              <button onClick={() => handleLoad(s)} className="flex-1 text-left hover:text-blue-400 truncate">
+              <button onClick={() => handleLoad(s)} className={`flex-1 text-left hover:text-blue-400 truncate text-gray-300 rounded px-1 ${focusRing} focus-visible:ring-white`}>
                 {s.name}
               </button>
               <button onClick={() => handleDelete(s.id)} className="text-red-400 hover:text-red-300 text-xs">

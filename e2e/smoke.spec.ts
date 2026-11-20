@@ -7,6 +7,9 @@ test.describe('Anahata smoke', () => {
     await expect(page).toHaveTitle(/Anahata/);
     await expect(page.getByRole('heading', { level: 1, name: /Anahata/ })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
+
+    // Durable rendered evidence at the shipped size, uploaded by CI.
+    await page.screenshot({ path: 'test-results/anahata-load.png', fullPage: true });
   });
 
   test('Alpha Waves preset applies a true beat pair and unlinks channels', async ({ page }) => {
@@ -25,9 +28,9 @@ test.describe('Anahata smoke', () => {
     await page.goto('/');
 
     await page.getByRole('button', { name: 'Play', exact: true }).click();
-    await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeVisible();
 
-    await page.getByRole('button', { name: 'Pause' }).click();
+    await page.getByRole('button', { name: 'Pause', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
   });
 
@@ -38,7 +41,7 @@ test.describe('Anahata smoke', () => {
     await page.getByLabel('Session duration (ms)').fill('3000');
 
     await page.getByRole('button', { name: 'Play', exact: true }).click();
-    await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeVisible();
 
     // The engine stops itself at 3s; the transport shows Play again.
     await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible({

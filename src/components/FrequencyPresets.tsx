@@ -99,6 +99,7 @@ const FrequencyPresets: React.FC<FrequencyPresetsProps> = ({ onFrequencySelect }
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
               <input
                 type="text"
+                aria-label="Preset name"
                 placeholder="Name"
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
@@ -106,6 +107,7 @@ const FrequencyPresets: React.FC<FrequencyPresetsProps> = ({ onFrequencySelect }
               />
               <input
                 type="number"
+                aria-label="Preset frequency (Hz)"
                 placeholder="Frequency (1-20000)"
                 value={form.freq}
                 onChange={e => setForm(f => ({ ...f, freq: e.target.value }))}
@@ -113,6 +115,7 @@ const FrequencyPresets: React.FC<FrequencyPresetsProps> = ({ onFrequencySelect }
               />
               <input
                 type="text"
+                aria-label="Preset description"
                 placeholder="Description (optional)"
                 value={form.desc}
                 onChange={e => setForm(f => ({ ...f, desc: e.target.value }))}
