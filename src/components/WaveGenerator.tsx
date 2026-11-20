@@ -1,8 +1,6 @@
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { useAudioEngine } from '../hooks/useAudioEngine';
-import { useSequencer } from '../hooks/useSequencer';
-import { useRecording } from '../audio/recording';
+import React, { useState, useRef, useEffect } from 'react';
+import { useTransport } from '../transport/useTransport';
 import PlayerControls from './PlayerControls';
 import FrequencyPresets from './FrequencyPresets';
 import ChannelMixer from './ChannelMixer';
@@ -11,8 +9,7 @@ import TransportBar from './TransportBar';
 import TimelineEditor from './TimelineEditor';
 import SessionPanel from './SessionPanel';
 import { Waves } from 'lucide-react';
-import { interpolateState, DEFAULT_CROSSFADE_MS } from '../sequencer/crossfade';
-import { evaluateSession } from '../sequencer/evaluate';
+import { DEFAULT_CROSSFADE_MS } from '../sequencer/crossfade';
 import { renderSessionToStereo, interleaveStereo } from '../audio/renderSession';
 import { encodeWAV } from '../audio/wavEncoder';
 import { useToast } from '@/hooks/use-toast';
@@ -23,7 +20,29 @@ const WaveGenerator = () => {
   // Restore the last autosaved session and settings on first render.
   const restoredRef = useRef(loadAutosave());
 
-  const [isPlaying, setIsPlaying] = useState(false);
+  // The transport owns play state, the engine, the recorder, and the
+  // crossfade machine — this component is view wiring plus settings.
+  const {
+    session,
+    setSession,
+    positionMs,
+    seek,
+    sequencerPlaying,
+    play: playSequencer,
+    pause: pauseSequencer,
+    stop: stopTransport,
+    engineLive,
+    playManual,
+    pauseManual,
+    applyManual,
+    isRecording,
+    toggleRecord,
+    getDisplayState,
+    getWaveformData,
+    setCrossfadeDuration,
+  } = useTransport();
+  const { toast } = useToast();
+
   const [leftChannel, setLeftChannel] = useState<ChannelState>(
     () => restoredRef.current?.settings.left ?? { frequency: 528, waveform: 'sine', amplitude: 0.5 }
   );
@@ -39,69 +58,6 @@ const WaveGenerator = () => {
   const [crossfadeMs, setCrossfadeMs] = useState(
     () => restoredRef.current?.settings.crossfadeMs ?? DEFAULT_CROSSFADE_MS
   );
-
-  const sequencerRunningRef = useRef(false);
-  const crossfadeRef = useRef<{
-    from: EvaluatedState;
-    to: EvaluatedState;
-    startTime: number;
-    duration: number;
-  } | null>(null);
-  const lastTickStateRef = useRef<EvaluatedState | null>(null);
-
-  const { startAudio, stopAudio, applyState, getWaveformData, getAudioContext, getMasterGain } = useAudioEngine();
-  const { startRecording, stopRecording, isRecording } = useRecording();
-  const { toast } = useToast();
-
-  const handleSequencerTick = useCallback((state: EvaluatedState) => {
-    let effectiveState = state;
-
-    if (crossfadeRef.current) {
-      const elapsed = performance.now() - crossfadeRef.current.startTime;
-      const progress = Math.min(1, elapsed / crossfadeRef.current.duration);
-      effectiveState = interpolateState(crossfadeRef.current.from, crossfadeRef.current.to, progress);
-
-      if (progress >= 1) {
-        crossfadeRef.current = null;
-      }
-    }
-
-    lastTickStateRef.current = effectiveState;
-
-    if (!sequencerRunningRef.current) {
-      startAudio({
-        leftChannel: { frequency: effectiveState.left.frequency, waveform: effectiveState.left.waveform, amplitude: effectiveState.left.amplitude },
-        rightChannel: { frequency: effectiveState.right.frequency, waveform: effectiveState.right.waveform, amplitude: effectiveState.right.amplitude },
-        masterVolume: effectiveState.masterVolume,
-      });
-      sequencerRunningRef.current = true;
-    } else {
-      applyState(effectiveState);
-    }
-  }, [startAudio, applyState]);
-
-  const handleSequencerEnd = useCallback(() => {
-    // Natural end of a non-loop session: the sequencer stopped itself;
-    // stop the engine with the standard fade, drop the first-tick
-    // latch, and stop any active recording.
-    sequencerRunningRef.current = false;
-    stopAudio();
-    setIsPlaying(false);
-    if (isRecording) {
-      stopRecording();
-    }
-  }, [stopAudio, stopRecording, isRecording]);
-
-  const {
-    session,
-    setSession,
-    positionMs,
-    isPlaying: sequencerPlaying,
-    play: sequencerPlay,
-    pause: sequencerPause,
-    stop: sequencerStop,
-    seek,
-  } = useSequencer(handleSequencerTick, handleSequencerEnd);
 
   // Restore the last autosaved session once on mount.
   useEffect(() => {
@@ -122,69 +78,72 @@ const WaveGenerator = () => {
     return () => clearTimeout(id);
   }, [session, leftChannel, rightChannel, linkedChannels, masterVolume, crossfadeMs]);
 
-  const handlePlay = async () => {
-    if (isPlaying) {
-      stopAudio();
-      setIsPlaying(false);
-    } else {
-      try {
-        await startAudio({
-          leftChannel,
-          rightChannel,
-          masterVolume
-        });
-        setIsPlaying(true);
-      } catch (error) {
-        console.error('Failed to start audio:', error);
-      }
-    }
-  };
+  // Keep the transport's crossfade machine on the current setting.
+  useEffect(() => {
+    setCrossfadeDuration(crossfadeMs);
+  }, [crossfadeMs, setCrossfadeDuration]);
 
-  const handleStop = () => {
-    stopAudio();
-    setIsPlaying(false);
+  // What is actually sounding: the sequencer's evaluated state while it
+  // plays, the manual settings otherwise. Labels read this, never the raw
+  // settings, so the UI never describes something else.
+  const displayState: EvaluatedState = getDisplayState({
+    left: leftChannel,
+    right: rightChannel,
+    masterVolume,
+  });
+
+  const handlePlayerToggle = () => {
+    if (sequencerPlaying) {
+      // One transport: the player card pauses the whole thing.
+      pauseSequencer();
+      return;
+    }
+    if (engineLive) {
+      pauseManual();
+    } else {
+      void playManual({ left: leftChannel, right: rightChannel, masterVolume });
+    }
   };
 
   const handleFrequencySelect = (frequency: number, beatHz?: number) => {
-    setLeftChannel(prev => ({ ...prev, frequency }));
+    const nextLeft = { ...leftChannel, frequency };
+    const nextRight =
+      beatHz !== undefined
+        ? { ...rightChannel, frequency: frequency + beatHz }
+        : linkedChannels
+          ? { ...rightChannel, frequency }
+          : rightChannel;
+
+    setLeftChannel(nextLeft);
+    setRightChannel(nextRight);
     if (beatHz !== undefined) {
       // A binaural beat needs independent channels: apply the offset pair and unlink.
-      setRightChannel(prev => ({ ...prev, frequency: frequency + beatHz }));
       setLinkedChannels(false);
-    } else if (linkedChannels) {
-      setRightChannel(prev => ({ ...prev, frequency }));
     }
+
+    // Honored live in manual mode; gated to a no-op while the sequencer owns
+    // the engine (one writer per mode).
+    applyManual({ left: nextLeft, right: nextRight, masterVolume });
   };
 
   const handleLeftChannelChange = (changes: Partial<typeof leftChannel>) => {
     const newLeft = { ...leftChannel, ...changes };
     setLeftChannel(newLeft);
 
+    let newRight = rightChannel;
     if (linkedChannels) {
-      if (changes.frequency !== undefined) setRightChannel(prev => ({ ...prev, frequency: changes.frequency! }));
-      if (changes.waveform !== undefined) setRightChannel(prev => ({ ...prev, waveform: changes.waveform! }));
-      if (changes.amplitude !== undefined) setRightChannel(prev => ({ ...prev, amplitude: changes.amplitude! }));
+      newRight = { ...rightChannel };
+      if (changes.frequency !== undefined) newRight.frequency = changes.frequency;
+      if (changes.waveform !== undefined) newRight.waveform = changes.waveform;
+      if (changes.amplitude !== undefined) newRight.amplitude = changes.amplitude;
+      setRightChannel(newRight);
     }
 
-    if (isPlaying) {
-      const rightFreq = linkedChannels && changes.frequency !== undefined ? changes.frequency : rightChannel.frequency;
-      const rightWaveform = linkedChannels && changes.waveform !== undefined ? changes.waveform : rightChannel.waveform;
-      const rightAmplitude = linkedChannels && changes.amplitude !== undefined ? changes.amplitude : rightChannel.amplitude;
-
-      applyState({
-        left: {
-          frequency: changes.frequency ?? leftChannel.frequency,
-          waveform: (changes.waveform ?? leftChannel.waveform) as EvaluatedState['left']['waveform'],
-          amplitude: changes.amplitude ?? leftChannel.amplitude,
-        },
-        right: {
-          frequency: rightFreq,
-          waveform: rightWaveform as EvaluatedState['right']['waveform'],
-          amplitude: rightAmplitude,
-        },
-        masterVolume,
-      });
-    }
+    applyManual({
+      left: newLeft,
+      right: newRight,
+      masterVolume,
+    });
   };
 
   const handleRightChannelChange = (changes: Partial<typeof rightChannel>) => {
@@ -200,40 +159,20 @@ const WaveGenerator = () => {
     const newRight = { ...rightChannel, ...changes };
     setRightChannel(newRight);
 
-    if (isPlaying) {
-      applyState({
-        left: {
-          frequency: leftChannel.frequency,
-          waveform: leftChannel.waveform as EvaluatedState['left']['waveform'],
-          amplitude: leftChannel.amplitude,
-        },
-        right: {
-          frequency: changes.frequency ?? rightChannel.frequency,
-          waveform: (changes.waveform ?? rightChannel.waveform) as EvaluatedState['right']['waveform'],
-          amplitude: changes.amplitude ?? rightChannel.amplitude,
-        },
-        masterVolume,
-      });
-    }
+    applyManual({
+      left: leftChannel,
+      right: newRight,
+      masterVolume,
+    });
   };
 
   const handleVolumeChange = (volume: number) => {
     setMasterVolume(volume);
-    if (isPlaying) {
-      applyState({
-        left: {
-          frequency: leftChannel.frequency,
-          waveform: leftChannel.waveform as EvaluatedState['left']['waveform'],
-          amplitude: leftChannel.amplitude,
-        },
-        right: {
-          frequency: rightChannel.frequency,
-          waveform: rightChannel.waveform as EvaluatedState['right']['waveform'],
-          amplitude: rightChannel.amplitude,
-        },
-        masterVolume: volume,
-      });
-    }
+    applyManual({
+      left: leftChannel,
+      right: rightChannel,
+      masterVolume: volume,
+    });
   };
 
   const handleExport = () => {
@@ -262,53 +201,6 @@ const WaveGenerator = () => {
     }
   };
 
-  const handleSequencerPlay = () => {
-    sequencerPlay();
-    setIsPlaying(true);
-  };
-
-  const handleSequencerPause = () => {
-    sequencerPause();
-    sequencerRunningRef.current = false;
-    stopAudio();
-    setIsPlaying(false);
-  };
-
-  const handleSequencerStop = () => {
-    sequencerStop();
-    sequencerRunningRef.current = false;
-    stopAudio();
-    setIsPlaying(false);
-    if (isRecording) {
-      stopRecording();
-    }
-  };
-
-  const handleSessionChange = (newSession: typeof session) => {
-    if (sequencerPlaying && sequencerRunningRef.current && lastTickStateRef.current) {
-      const targetState = evaluateSession(newSession, 0);
-      crossfadeRef.current = {
-        from: lastTickStateRef.current,
-        to: targetState,
-        startTime: performance.now(),
-        duration: crossfadeMs,
-      };
-    }
-    setSession(newSession);
-  };
-
-  const handleToggleRecord = () => {
-    if (isRecording) {
-      stopRecording();
-    } else {
-      const ctx = getAudioContext();
-      const master = getMasterGain();
-      if (ctx && master) {
-        startRecording(ctx, master);
-      }
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900 p-4 space-y-6">
       {/* Header */}
@@ -327,14 +219,14 @@ const WaveGenerator = () => {
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Player Controls - Spotify Style */}
         <PlayerControls
-          isPlaying={isPlaying}
+          isPlaying={engineLive}
           masterVolume={masterVolume}
-          onPlay={handlePlay}
-          onStop={handleStop}
+          onPlay={handlePlayerToggle}
+          onStop={stopTransport}
           onVolumeChange={handleVolumeChange}
           onExport={handleExport}
-          leftFreq={leftChannel.frequency}
-          rightFreq={rightChannel.frequency}
+          leftFreq={displayState.left.frequency}
+          rightFreq={displayState.right.frequency}
         />
 
         {/* Frequency Presets */}
@@ -342,10 +234,10 @@ const WaveGenerator = () => {
 
         {/* Waveform Visualizer */}
         <WaveformVisualizer
-          leftChannel={leftChannel}
-          rightChannel={rightChannel}
-          isPlaying={isPlaying}
-          masterVolume={masterVolume}
+          leftChannel={displayState.left}
+          rightChannel={displayState.right}
+          isPlaying={engineLive}
+          masterVolume={displayState.masterVolume}
           getWaveformData={getWaveformData}
         />
 
@@ -368,27 +260,27 @@ const WaveGenerator = () => {
             positionMs={positionMs}
             durationMs={session.durationMs}
             loop={session.loop}
-            onPlay={handleSequencerPlay}
-            onPause={handleSequencerPause}
-            onStop={handleSequencerStop}
+            onPlay={playSequencer}
+            onPause={pauseSequencer}
+            onStop={stopTransport}
             onSeek={seek}
             onToggleLoop={() => setSession({ ...session, loop: !session.loop })}
             onDurationChange={(ms) => setSession({ ...session, durationMs: ms })}
             isRecording={isRecording}
             canRecord={sequencerPlaying}
-            onToggleRecord={handleToggleRecord}
+            onToggleRecord={toggleRecord}
           />
 
           <TimelineEditor
             session={session}
             positionMs={positionMs}
-            onChange={handleSessionChange}
+            onChange={setSession}
             onSeek={seek}
           />
 
           <SessionPanel
             session={session}
-            onChangeSession={handleSessionChange}
+            onChangeSession={setSession}
             crossfadeMs={crossfadeMs}
             onCrossfadeMsChange={setCrossfadeMs}
           />
