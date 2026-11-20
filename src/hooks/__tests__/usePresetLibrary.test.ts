@@ -63,6 +63,28 @@ describe('DEFAULT_PRESETS', () => {
     expect(DEFAULT_PRESETS.length).toBeGreaterThan(0);
   });
 
+  it('brainwave presets carry an audible carrier and a beat offset', () => {
+    const alpha = DEFAULT_PRESETS.find(p => p.id === 'alpha-waves')!;
+    expect(alpha.freq).toBeGreaterThanOrEqual(100);
+    expect(alpha.beatHz).toBe(10);
+
+    const theta = DEFAULT_PRESETS.find(p => p.id === 'theta-waves')!;
+    expect(theta.freq).toBeGreaterThanOrEqual(100);
+    expect(theta.beatHz).toBe(6);
+  });
+
+  it('round-trips a beat preset through serialize/deserialize', () => {
+    const beat: Preset[] = [
+      { id: 'b1', name: 'Alpha', freq: 200, beatHz: 10, desc: 'd', color: 'from-indigo-500 to-purple-600' },
+    ];
+    expect(deserializePresets(serializePresets(beat))).toEqual(beat);
+  });
+
+  it('rejects a preset with an invalid beat offset', () => {
+    const bad = JSON.stringify([{ id: 'x', name: 'Y', freq: 200, desc: 'd', color: 'c', beatHz: -3 }]);
+    expect(() => deserializePresets(bad)).toThrow('invalid beat offset');
+  });
+
   it('all presets have required fields', () => {
     for (const p of DEFAULT_PRESETS) {
       expect(typeof p.id).toBe('string');

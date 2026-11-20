@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { serializeSession, deserializeSession } from '../sequencer/session';
 import type { Session } from '../sequencer/types';
 
 interface SessionPanelProps {
@@ -13,19 +14,38 @@ const STORAGE_KEY = 'anahata.sessions';
 const loadSessions = (): Session[] => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    // Each saved entry is a serialized session; corrupt entries are skipped.
+    return parsed
+      .filter((entry): entry is string => typeof entry === 'string')
+      .map((entry) => {
+        try {
+          return deserializeSession(entry);
+        } catch {
+          return null;
+        }
+      })
+      .filter((session): session is Session => session !== null);
   } catch {
     return [];
   }
 };
 
 const saveSessions = (sessions: Session[]) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions.map(serializeSession)));
 };
 
 const SessionPanel: React.FC<SessionPanelProps> = ({ session, onChangeSession, crossfadeMs, onCrossfadeMsChange }) => {
   const [name, setName] = useState(session.name);
   const [savedList, setSavedList] = useState<Session[]>(loadSessions);
+
+  // Track the session identity as it changes (restore on mount, load, import).
+  // Typing only touches local state, so this never clobbers the input.
+  useEffect(() => {
+    setName(session.name);
+  }, [session.name]);
 
   const handleSave = () => {
     const toSave = { ...session, name };
@@ -65,11 +85,11 @@ const SessionPanel: React.FC<SessionPanelProps> = ({ session, onChangeSession, c
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        const imported = JSON.parse(reader.result as string) as Session;
+        const imported = deserializeSession(reader.result as string);
         onChangeSession(imported);
         setName(imported.name);
       } catch {
-        alert('Invalid JSON file');
+        alert('Invalid session file: not a valid Anahata session');
       }
     };
     reader.readAsText(file);
