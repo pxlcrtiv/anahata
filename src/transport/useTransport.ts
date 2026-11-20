@@ -1,7 +1,8 @@
 import { useRef, useState, useCallback } from 'react';
 import { useAudioEngine } from '../hooks/useAudioEngine';
 import { useSequencer } from '../hooks/useSequencer';
-import { useRecording } from '../audio/recording';
+import { useRecording, recordingFilename } from '../audio/recording';
+import { downloadBlob } from '../audio/downloadBlob';
 import { interpolateState, DEFAULT_CROSSFADE_MS } from '../sequencer/crossfade';
 import { evaluateSession } from '../sequencer/evaluate';
 import type { Session, EvaluatedState } from '../sequencer/types';
@@ -20,8 +21,9 @@ import type { Session, EvaluatedState } from '../sequencer/types';
 type Mode = 'idle' | 'manual' | 'sequencer';
 
 export function useTransport() {
-  const { startAudio, stopAudio, applyState, getWaveformData, getAudioContext, getMasterGain } = useAudioEngine();
+  const { startAudio, stopAudio, applyState, getWaveformData, createMasterTap } = useAudioEngine();
   const { startRecording, stopRecording, isRecording } = useRecording();
+  const recordStartRef = useRef(0);
 
   const modeRef = useRef<Mode>('idle');
   const latchRef = useRef(false); // sequencer: start the engine on the first tick only
@@ -178,13 +180,15 @@ export function useTransport() {
 
   const toggleRecord = useCallback(() => {
     if (isRecording) {
-      stopRecording();
+      const blob = stopRecording();
+      if (blob) {
+        downloadBlob(blob, recordingFilename(recordStartRef.current, performance.now()));
+      }
       return;
     }
-    const ctx = getAudioContext();
-    const master = getMasterGain();
-    if (ctx && master) startRecording(ctx, master);
-  }, [isRecording, stopRecording, getAudioContext, getMasterGain, startRecording]);
+    startRecording((onProcess) => createMasterTap(onProcess));
+    recordStartRef.current = performance.now();
+  }, [isRecording, stopRecording, startRecording, createMasterTap]);
 
   // ---- display: what is actually sounding ----
 

@@ -22,12 +22,28 @@ function makeState(overrides: Partial<EvaluatedState> = {}): EvaluatedState {
 }
 
 describe('useAudioEngine', () => {
+  // The tap test grabs the processor the engine creates.
+  let capturedProcessor: {
+    onaudioprocess: ((e: AudioProcessingEvent) => void) | null;
+    connect: ReturnType<typeof vi.fn>;
+    disconnect: ReturnType<typeof vi.fn>;
+  };
+
   beforeAll(() => {
     class MockAudioContext {
       state = 'running';
       currentTime = 0;
       sampleRate = 44100;
       async resume() {}
+
+      createScriptProcessor() {
+        capturedProcessor = {
+          onaudioprocess: null,
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        };
+        return capturedProcessor;
+      }
 
       createOscillator() {
         const osc = {
@@ -225,5 +241,33 @@ describe('useAudioEngine', () => {
     expect(result.current.getCreatedNodes().oscillators.length).toBe(0);
     expect(result.current.getCreatedNodes().gains.length).toBe(0);
     expect(result.current.getCreatedNodes().analysers.length).toBe(0);
+  });
+
+  it('createMasterTap routes a muted tap off the master bus and tears down', async () => {
+    const { result } = renderHook(() => useAudioEngine());
+
+    // No context yet — no tap.
+    expect(result.current.createMasterTap(() => {})).toBeNull();
+
+    await act(async () => {
+      await result.current.startAudio({
+        leftChannel: makeChannel(),
+        rightChannel: makeChannel(),
+        masterVolume: 0.7,
+      });
+    });
+
+    const { masterGain } = result.current.getCreatedNodes();
+    const onProcess = vi.fn();
+    const teardown = result.current.createMasterTap(onProcess)!;
+
+    expect(teardown).not.toBeNull();
+    // The tap hangs off the master bus, and its handler is wired.
+    expect(masterGain!.connect).toHaveBeenCalledWith(capturedProcessor);
+    expect(capturedProcessor.onaudioprocess).toBe(onProcess);
+
+    teardown();
+    expect(capturedProcessor.disconnect).toHaveBeenCalledTimes(1);
+    expect(capturedProcessor.onaudioprocess).toBeNull();
   });
 });
