@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { focusRing } from '@/lib/focus';
 import { serializeSession, deserializeSession } from '../sequencer/session';
+import { downloadBlob } from '../audio/downloadBlob';
 import type { Session } from '../sequencer/types';
 
 interface SessionPanelProps {
@@ -75,12 +76,7 @@ const SessionPanel: React.FC<SessionPanelProps> = ({ session, onChangeSession, c
 
   const handleExport = () => {
     const blob = new Blob([JSON.stringify(session, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${session.name || 'session'}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `${session.name || 'session'}.json`);
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {

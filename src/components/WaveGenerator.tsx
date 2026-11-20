@@ -13,6 +13,7 @@ import { DEFAULT_CROSSFADE_MS } from '../sequencer/crossfade';
 import { BASELINE } from '../sequencer/evaluate';
 import { renderSessionToStereo, interleaveStereo } from '../audio/renderSession';
 import { encodeWAV } from '../audio/wavEncoder';
+import { downloadBlob } from '../audio/downloadBlob';
 import { useToast } from '@/hooks/use-toast';
 import { loadAutosave, saveAutosave } from '../storage/sessionStorage';
 import type { ChannelState, EvaluatedState } from '../sequencer/types';
@@ -182,12 +183,7 @@ const WaveGenerator = () => {
       const interleaved = interleaveStereo(rendered.left, rendered.right);
       const wav = encodeWAV(interleaved, 2, rendered.sampleRate);
       const blob = new Blob([wav], { type: 'audio/wav' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `anahata-${(session.name || 'session').replace(/\s+/g, '-').toLowerCase()}-${(session.durationMs / 1000).toFixed(1)}s.wav`;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `anahata-${(session.name || 'session').replace(/\s+/g, '-').toLowerCase()}-${(session.durationMs / 1000).toFixed(1)}s.wav`);
       toast({
         title: 'Export complete',
         description: `${(session.durationMs / 1000).toFixed(1)}s session rendered to WAV`,

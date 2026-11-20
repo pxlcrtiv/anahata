@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import WaveGenerator from '../WaveGenerator';
 
 afterEach(() => {
@@ -18,13 +18,10 @@ describe('WaveGenerator — session export', () => {
 
   it('downloads a WAV of the session and reports success', () => {
     const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
-    const { container } = render(<WaveGenerator />);
+    render(<WaveGenerator />);
 
-    // The Download control is icon-only (an a11y gap tracked for the
-    // elegance pass) — locate it via its lucide icon.
-    const downloadIcon = container.querySelector('svg.lucide-download');
-    expect(downloadIcon).toBeTruthy();
-    fireEvent.click(downloadIcon!.closest('button')!);
+    // The Download control carries an accessible name since the elegance pass.
+    fireEvent.click(screen.getByRole('button', { name: 'Download session WAV' }));
 
     expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
     const createObjectURL = URL.createObjectURL as unknown as ReturnType<typeof vi.fn>;

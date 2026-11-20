@@ -198,14 +198,45 @@ export const useAudioEngine = () => {
     };
   }, [stopAudio]);
 
+  /** Routes an off-master tap: connects the node to the master bus and
+   *  returns a teardown that removes it. This is the only seam outside
+   *  code gets to the graph — the graph itself stays private. The tap's
+   *  output is muted before the destination, so the bus is never routed
+   *  to the speakers twice. */
+  const createMasterTap = useCallback(
+    (onProcess: (e: AudioProcessingEvent) => void): (() => void) | null => {
+      const ctx = audioContextRef.current;
+      const master = masterGainRef.current;
+      if (!ctx || !master) return null;
+
+      // ScriptProcessorNode: deprecated, but adequate for a lightweight
+      // accumulate-on-stop tap (no real-time rendering needs). AudioWorklet
+      // is the recorded follow-up if recording jank is ever measured.
+      const processor = ctx.createScriptProcessor(4096, 2, 2);
+      processor.onaudioprocess = onProcess;
+      const sink = ctx.createGain();
+      sink.gain.value = 0;
+      master.connect(processor);
+      processor.connect(sink);
+      sink.connect(ctx.destination);
+
+      return () => {
+        processor.onaudioprocess = null;
+        try { processor.disconnect(); } catch { /* already gone */ }
+        try { master.disconnect(processor); } catch { /* already gone */ }
+        try { sink.disconnect(); } catch { /* already gone */ }
+      };
+    },
+    [],
+  );
+
   return {
     startAudio,
     stopAudio,
     applyState,
     getWaveformData,
     isPlaying: isPlayingRef.current,
-    getAudioContext: () => audioContextRef.current,
-    getMasterGain: () => masterGainRef.current,
+    createMasterTap,
     getCreatedNodes: () => nodesRef.current,
   };
 };

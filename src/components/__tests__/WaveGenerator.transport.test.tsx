@@ -16,8 +16,7 @@ vi.mock('../../hooks/useAudioEngine', () => ({
     stopAudio,
     applyState,
     getWaveformData: () => ({ left: null, right: null }),
-    getAudioContext: () => null,
-    getMasterGain: () => null,
+    createMasterTap: () => null,
   }),
 }));
 
