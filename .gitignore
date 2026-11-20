@@ -32,3 +32,7 @@ dist-ssr
 
 # Non-canonical lockfile (repo standardizes on package-lock.json)
 bun.lockb
+
+# Playwright run state and traces
+test-results/
+playwright-report/
