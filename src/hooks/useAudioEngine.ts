@@ -1,7 +1,5 @@
 
 import { useRef, useCallback, useEffect } from 'react';
-import { encodeWAV } from '../audio/wavEncoder';
-import { generateWaveformSamples } from '../audio/waveform';
 import type { EvaluatedState, Waveform } from '../sequencer/types';
 
 export interface AudioEngineConfig {
@@ -191,47 +189,6 @@ export const useAudioEngine = () => {
     return { left: leftDataRef.current, right: rightDataRef.current };
   }, []);
 
-  const exportWAV = useCallback((config: AudioEngineConfig, duration: number = 10) => {
-    if (!audioContextRef.current) return;
-
-    const sampleRate = audioContextRef.current.sampleRate;
-    const length = sampleRate * duration;
-    const buffer = audioContextRef.current.createBuffer(2, length, sampleRate);
-
-    const { left, right } = generateWaveformSamples(
-      {
-        left: {
-          frequency: config.leftChannel.frequency,
-          waveform: config.leftChannel.waveform as EvaluatedState['left']['waveform'],
-          amplitude: config.leftChannel.amplitude,
-        },
-        right: {
-          frequency: config.rightChannel.frequency,
-          waveform: config.rightChannel.waveform as EvaluatedState['right']['waveform'],
-          amplitude: config.rightChannel.amplitude,
-        },
-        masterVolume: config.masterVolume,
-      },
-      sampleRate,
-      length,
-    );
-
-    const leftChannel = buffer.getChannelData(0);
-    const rightChannel = buffer.getChannelData(1);
-    leftChannel.set(left);
-    rightChannel.set(right);
-
-    // Convert to WAV and download
-    const wav = bufferToWave(buffer, length);
-    const blob = new Blob([wav], { type: 'audio/wav' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `wave-${config.leftChannel.frequency}Hz-${config.rightChannel.frequency}Hz.wav`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, []);
-
   useEffect(() => {
     return () => {
       stopAudio();
@@ -245,7 +202,6 @@ export const useAudioEngine = () => {
     startAudio,
     stopAudio,
     applyState,
-    exportWAV,
     getWaveformData,
     isPlaying: isPlayingRef.current,
     getAudioContext: () => audioContextRef.current,
@@ -253,22 +209,3 @@ export const useAudioEngine = () => {
     getCreatedNodes: () => nodesRef.current,
   };
 };
-
-// Helper function to convert AudioBuffer to WAV
-function bufferToWave(abuffer: AudioBuffer, len: number) {
-  const numOfChan = abuffer.numberOfChannels;
-  const channels: Float32Array[] = [];
-  for (let i = 0; i < numOfChan; i++) {
-    channels.push(abuffer.getChannelData(i).subarray(0, len));
-  }
-
-  // Interleave channels
-  const interleaved = new Float32Array(len * numOfChan);
-  for (let i = 0; i < len; i++) {
-    for (let ch = 0; ch < numOfChan; ch++) {
-      interleaved[i * numOfChan + ch] = channels[ch][i];
-    }
-  }
-
-  return encodeWAV(interleaved, numOfChan, abuffer.sampleRate);
-}
