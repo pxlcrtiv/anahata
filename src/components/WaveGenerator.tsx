@@ -116,9 +116,13 @@ const WaveGenerator = () => {
     setIsPlaying(false);
   };
 
-  const handleFrequencySelect = (frequency: number) => {
+  const handleFrequencySelect = (frequency: number, beatHz?: number) => {
     setLeftChannel(prev => ({ ...prev, frequency }));
-    if (linkedChannels) {
+    if (beatHz !== undefined) {
+      // A binaural beat needs independent channels: apply the offset pair and unlink.
+      setRightChannel(prev => ({ ...prev, frequency: frequency + beatHz }));
+      setLinkedChannels(false);
+    } else if (linkedChannels) {
       setRightChannel(prev => ({ ...prev, frequency }));
     }
   };

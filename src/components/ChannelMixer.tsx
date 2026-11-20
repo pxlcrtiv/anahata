@@ -78,7 +78,7 @@ const ChannelMixer: React.FC<ChannelMixerProps> = ({
                   value={[leftChannel.frequency]}
                   onValueChange={(value) => onLeftChannelChange({ frequency: value[0] })}
                   min={1}
-                  max={2000}
+                  max={20000}
                   step={1}
                   className="mt-2"
                 />
@@ -146,7 +146,7 @@ const ChannelMixer: React.FC<ChannelMixerProps> = ({
                   value={[rightChannel.frequency]}
                   onValueChange={(value) => onRightChannelChange({ frequency: value[0] })}
                   min={1}
-                  max={2000}
+                  max={20000}
                   step={1}
                   className="mt-2"
                   disabled={linkedChannels}

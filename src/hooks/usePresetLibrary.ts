@@ -6,6 +6,8 @@ export interface Preset {
   freq: number;
   desc: string;
   color: string;
+  /** When set, the preset selects a carrier pair offset by this many Hz (a true binaural beat). */
+  beatHz?: number;
 }
 
 export const DEFAULT_PRESETS: Preset[] = [
@@ -13,8 +15,8 @@ export const DEFAULT_PRESETS: Preset[] = [
   { id: 'earth-tone', name: 'Earth Tone', freq: 432, desc: '432 Hz tone', color: 'from-blue-500 to-cyan-600' },
   { id: 'crown-chakra', name: '963 Hz', freq: 963, desc: '963 Hz tone', color: 'from-purple-500 to-violet-600' },
   { id: 'ce5-contact', name: '1111 Hz', freq: 1111, desc: '1111 Hz tone', color: 'from-yellow-500 to-orange-600' },
-  { id: 'alpha-waves', name: 'Alpha Waves', freq: 10, desc: '10 Hz beat', color: 'from-indigo-500 to-purple-600' },
-  { id: 'theta-waves', name: 'Theta Waves', freq: 6, desc: '6 Hz beat', color: 'from-pink-500 to-rose-600' },
+  { id: 'alpha-waves', name: 'Alpha Waves', freq: 200, beatHz: 10, desc: '200/210 Hz · 10 Hz beat', color: 'from-indigo-500 to-purple-600' },
+  { id: 'theta-waves', name: 'Theta Waves', freq: 200, beatHz: 6, desc: '200/206 Hz · 6 Hz beat', color: 'from-pink-500 to-rose-600' },
 ];
 
 export const STORAGE_KEY = 'anahata.presets';
@@ -38,6 +40,9 @@ export function deserializePresets(json: string): Preset[] {
       typeof item.color !== 'string'
     ) {
       throw new Error('Invalid preset: missing required fields');
+    }
+    if (item.beatHz !== undefined && !validateBeatHz(item.beatHz)) {
+      throw new Error('Invalid preset: invalid beat offset');
     }
   }
   return parsed as Preset[];
@@ -63,6 +68,10 @@ function saveToStorage(storageKey: string, presets: Preset[]): void {
 
 export function validateFrequency(freq: number): boolean {
   return Number.isFinite(freq) && freq >= 1 && freq <= 20000;
+}
+
+export function validateBeatHz(hz: number): boolean {
+  return Number.isFinite(hz) && hz > 0 && hz <= 40;
 }
 
 export function usePresetLibrary(storageKey: string = STORAGE_KEY) {

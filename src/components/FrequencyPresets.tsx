@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { usePresetLibrary, validateFrequency } from '@/hooks/usePresetLibrary';
 
 interface FrequencyPresetsProps {
-  onFrequencySelect: (frequency: number) => void;
+  onFrequencySelect: (frequency: number, beatHz?: number) => void;
 }
 
 interface FormData {
@@ -135,13 +135,15 @@ const FrequencyPresets: React.FC<FrequencyPresetsProps> = ({ onFrequencySelect }
           {presets.map((preset) => (
             <div key={preset.id} className="relative group">
               <Button
-                onClick={() => onFrequencySelect(preset.freq)}
+                onClick={() => onFrequencySelect(preset.freq, preset.beatHz)}
                 variant="outline"
                 className={`w-full h-auto p-4 bg-gradient-to-br ${preset.color} border-0 hover:scale-105 transition-all duration-200 text-white`}
               >
                 <div className="text-center">
                   <div className="font-semibold text-sm">{preset.name}</div>
-                  <div className="text-lg font-bold">{preset.freq}Hz</div>
+                  <div className="text-lg font-bold">
+                    {preset.beatHz !== undefined ? `${preset.freq}/${preset.freq + preset.beatHz}Hz` : `${preset.freq}Hz`}
+                  </div>
                   <div className="text-xs opacity-90">{preset.desc}</div>
                 </div>
               </Button>
