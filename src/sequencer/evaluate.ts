@@ -1,6 +1,8 @@
 import type { Session, EvaluatedState, ChannelState, Waveform } from './types';
 
-const BASELINE: EvaluatedState = {
+/** The baseline state a session starts from — the single home for the
+ *  default channel values and master volume. */
+export const BASELINE: EvaluatedState = {
   left: { frequency: 528, waveform: 'sine', amplitude: 0.5 },
   right: { frequency: 528, waveform: 'sine', amplitude: 0.5 },
   masterVolume: 0.7,

@@ -63,6 +63,29 @@ describe('SessionPanel — import validation', () => {
     expect(onChangeSession).not.toHaveBeenCalled();
   });
 
+  it('rejects a session whose event fields are invalid with a visible inline error', async () => {
+    const onChangeSession = vi.fn();
+    const { container } = renderPanel(onChangeSession);
+
+    // Right shape, garbage inside an event — must not reach the graph.
+    importFile(
+      container,
+      JSON.stringify({
+        id: 'x',
+        name: 'N',
+        durationMs: 1000,
+        loop: false,
+        events: [{ id: 'e1', timeMs: 'abc' }],
+      }),
+    );
+
+    await vi.waitFor(() => {
+      const alert = screen.getByRole('alert');
+      expect(alert.textContent).toContain('Invalid session file');
+    });
+    expect(onChangeSession).not.toHaveBeenCalled();
+  });
+
   it('rejects unparseable JSON with a visible inline error', async () => {
     const onChangeSession = vi.fn();
     const { container } = renderPanel(onChangeSession);

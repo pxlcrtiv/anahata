@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'lucide-react';
+import { WAVEFORMS } from '../sequencer/types';
 
 interface ChannelConfig {
   frequency: number;
@@ -95,10 +96,9 @@ const ChannelMixer: React.FC<ChannelMixerProps> = ({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-600">
-                    <SelectItem value="sine">Sine</SelectItem>
-                    <SelectItem value="square">Square</SelectItem>
-                    <SelectItem value="triangle">Triangle</SelectItem>
-                    <SelectItem value="sawtooth">Sawtooth</SelectItem>
+                    {WAVEFORMS.map((w) => (
+                      <SelectItem key={w} value={w}>{w.charAt(0).toUpperCase() + w.slice(1)}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -167,10 +167,9 @@ const ChannelMixer: React.FC<ChannelMixerProps> = ({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-600">
-                    <SelectItem value="sine">Sine</SelectItem>
-                    <SelectItem value="square">Square</SelectItem>
-                    <SelectItem value="triangle">Triangle</SelectItem>
-                    <SelectItem value="sawtooth">Sawtooth</SelectItem>
+                    {WAVEFORMS.map((w) => (
+                      <SelectItem key={w} value={w}>{w.charAt(0).toUpperCase() + w.slice(1)}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

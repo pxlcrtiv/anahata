@@ -10,6 +10,7 @@ import TimelineEditor from './TimelineEditor';
 import SessionPanel from './SessionPanel';
 import { Waves } from 'lucide-react';
 import { DEFAULT_CROSSFADE_MS } from '../sequencer/crossfade';
+import { BASELINE } from '../sequencer/evaluate';
 import { renderSessionToStereo, interleaveStereo } from '../audio/renderSession';
 import { encodeWAV } from '../audio/wavEncoder';
 import { useToast } from '@/hooks/use-toast';
@@ -44,16 +45,16 @@ const WaveGenerator = () => {
   const { toast } = useToast();
 
   const [leftChannel, setLeftChannel] = useState<ChannelState>(
-    () => restoredRef.current?.settings.left ?? { frequency: 528, waveform: 'sine', amplitude: 0.5 }
+    () => restoredRef.current?.settings.left ?? { ...BASELINE.left }
   );
   const [rightChannel, setRightChannel] = useState<ChannelState>(
-    () => restoredRef.current?.settings.right ?? { frequency: 528, waveform: 'sine', amplitude: 0.5 }
+    () => restoredRef.current?.settings.right ?? { ...BASELINE.right }
   );
   const [linkedChannels, setLinkedChannels] = useState(
     () => restoredRef.current?.settings.linked ?? true
   );
   const [masterVolume, setMasterVolume] = useState(
-    () => restoredRef.current?.settings.masterVolume ?? 0.7
+    () => restoredRef.current?.settings.masterVolume ?? BASELINE.masterVolume
   );
   const [crossfadeMs, setCrossfadeMs] = useState(
     () => restoredRef.current?.settings.crossfadeMs ?? DEFAULT_CROSSFADE_MS
