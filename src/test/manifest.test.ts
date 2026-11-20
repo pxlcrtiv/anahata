@@ -37,7 +37,7 @@ describe('PWA manifest', () => {
   it('declares a standalone app identity', () => {
     expect(manifest.short_name).toBe('Anahata');
     expect(manifest.display).toBe('standalone');
-    expect(manifest.start_url).toBe('/');
+    expect(manifest.start_url).toBe('/app');
     expect(manifest.background_color).toBe('#000000');
     expect(manifest.theme_color).toBe('#000000');
   });

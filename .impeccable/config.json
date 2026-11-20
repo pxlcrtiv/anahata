@@ -19,6 +19,24 @@
         ],
         "createdAt": "2026-11-20T02:32:44.380Z",
         "reason": "DESIGN.md, user-confirmed at the document flow: preset tile hues are sanctioned content, not chrome. Findings carry no value token, so file scope is the narrowest granularity this rule supports; the file renders only preset tiles and their form."
+      },
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "src/pages/Landing.tsx"
+        ],
+        "createdAt": "2026-11-20T02:42:16.126Z",
+        "reason": "DESIGN.md Overview: the wordmark's green-to-blue gradient is the system's single documented expressive flourish — the same brand mark the app header has always carried. Wordmark only; this file's other text stays weight/size-based."
+      },
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "src/components/WaveGenerator.tsx"
+        ],
+        "createdAt": "2026-11-20T02:42:16.145Z",
+        "reason": "DESIGN.md Overview: the wordmark's green-to-blue gradient is the system's single documented expressive flourish — the incumbent app header mark."
       }
     ]
   }

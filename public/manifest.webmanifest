@@ -2,7 +2,7 @@
   "name": "Anahata — Binaural Tone Studio",
   "short_name": "Anahata",
   "description": "A calm, precise dual-channel tone studio for binaural beats, brainwave entrainment, and audio experiments.",
-  "start_url": "/",
+  "start_url": "/app",
   "scope": "/",
   "display": "standalone",
   "background_color": "#000000",
