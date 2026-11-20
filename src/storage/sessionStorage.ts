@@ -1,5 +1,6 @@
 import { serializeSession, deserializeSession } from '../sequencer/session';
-import type { Session, ChannelState, Waveform } from '../sequencer/types';
+import type { Session, ChannelState } from '../sequencer/types';
+import { WAVEFORMS } from '../sequencer/types';
 
 export const AUTOSAVE_KEY = 'anahata.autosave';
 
@@ -10,8 +11,6 @@ export interface StoredSettings {
   masterVolume: number;
   crossfadeMs: number;
 }
-
-const WAVEFORMS: Waveform[] = ['sine', 'square', 'triangle', 'sawtooth'];
 
 function isChannelState(value: unknown): value is ChannelState {
   if (typeof value !== 'object' || value === null) return false;

@@ -52,6 +52,18 @@ describe('autosave storage', () => {
     expect(loadAutosave()).toBeNull();
   });
 
+  it('rejects an autosave whose session carries invalid event fields', () => {
+    const sessionJson = JSON.stringify({
+      id: 'x',
+      name: 'N',
+      durationMs: 1000,
+      loop: false,
+      events: [{ id: 'e1', timeMs: 'abc' }],
+    });
+    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({ sessionJson, settings }));
+    expect(loadAutosave()).toBeNull();
+  });
+
   it('rejects an autosave missing the session payload', () => {
     localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({ settings }));
     expect(loadAutosave()).toBeNull();

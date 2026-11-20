@@ -2,12 +2,6 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { evaluateSession } from '../sequencer/evaluate';
 import type { Session, EvaluatedState } from '../sequencer/types';
 
-const BASELINE_STATE: EvaluatedState = {
-  left: { frequency: 528, waveform: 'sine', amplitude: 0.5 },
-  right: { frequency: 528, waveform: 'sine', amplitude: 0.5 },
-  masterVolume: 0.7,
-};
-
 const DEFAULT_SESSION: Session = {
   id: '',
   name: 'Untitled',

@@ -52,3 +52,67 @@ describe('serializeSession / deserializeSession', () => {
     expect(() => deserializeSession('{}')).toThrow();
   });
 });
+
+describe('event-item validation', () => {
+  const base = { id: 's', name: 'N', durationMs: 1000, loop: false };
+
+  const withEvent = (event: unknown) =>
+    JSON.stringify({ ...base, events: [event] });
+
+  it('rejects a non-numeric timeMs', () => {
+    expect(() => deserializeSession(withEvent({ id: 'e1', timeMs: 'abc' }))).toThrow(/timeMs/);
+  });
+
+  it('rejects a non-numeric frequency (string)', () => {
+    expect(() =>
+      deserializeSession(withEvent({ id: 'e1', timeMs: 0, left: { frequency: '440' } })),
+    ).toThrow(/frequency/);
+  });
+
+  it('rejects a NaN frequency (serializes to null)', () => {
+    expect(() =>
+      deserializeSession(withEvent({ id: 'e1', timeMs: 0, left: { frequency: NaN } })),
+    ).toThrow(/frequency/);
+  });
+
+  it('rejects an unknown waveform', () => {
+    expect(() =>
+      deserializeSession(withEvent({ id: 'e1', timeMs: 0, left: { waveform: 'wobble' } })),
+    ).toThrow(/waveform/);
+  });
+
+  it('rejects a non-numeric rampMs', () => {
+    expect(() => deserializeSession(withEvent({ id: 'e1', timeMs: 0, rampMs: '100' }))).toThrow(/rampMs/);
+  });
+
+  it('rejects a non-numeric masterVolume', () => {
+    expect(() =>
+      deserializeSession(withEvent({ id: 'e1', timeMs: 0, masterVolume: '0.5' })),
+    ).toThrow(/masterVolume/);
+  });
+
+  it('rejects a non-numeric amplitude', () => {
+    expect(() =>
+      deserializeSession(withEvent({ id: 'e1', timeMs: 0, right: { amplitude: null } })),
+    ).toThrow(/amplitude/);
+  });
+
+  it('round-trips a valid partial event unchanged', () => {
+    const event = { id: 'e1', timeMs: 0, left: { frequency: 200 } };
+    const restored = deserializeSession(withEvent(event));
+    expect(restored.events).toEqual([event]);
+  });
+
+  it('round-trips a valid full event with a ramp unchanged', () => {
+    const event = {
+      id: 'e1',
+      timeMs: 500,
+      left: { frequency: 300, waveform: 'square', amplitude: 0.8 },
+      right: { frequency: 310, waveform: 'sine' },
+      masterVolume: 0.4,
+      rampMs: 1000,
+    };
+    const restored = deserializeSession(withEvent(event));
+    expect(restored.events).toEqual([event]);
+  });
+});

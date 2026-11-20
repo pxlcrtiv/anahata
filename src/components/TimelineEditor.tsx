@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { focusRing } from '@/lib/focus';
+import { BASELINE } from '../sequencer/evaluate';
+import { WAVEFORMS } from '../sequencer/types';
 import type { Session, SessionEvent, Waveform } from '../sequencer/types';
 
 interface TimelineEditorProps {
@@ -43,8 +45,8 @@ const TimelineEditor: React.FC<TimelineEditorProps> = ({
     const newEvent: SessionEvent = {
       id: genId(),
       timeMs: positionMs,
-      left: { frequency: 528, waveform: 'sine' as Waveform, amplitude: 0.5 },
-      right: { frequency: 528, waveform: 'sine' as Waveform, amplitude: 0.5 },
+      left: { ...BASELINE.left },
+      right: { ...BASELINE.right },
     };
     onChange({ ...session, events: [...session.events, newEvent].sort((a, b) => a.timeMs - b.timeMs) });
     setSelectedId(newEvent.id);
@@ -130,7 +132,7 @@ const TimelineEditor: React.FC<TimelineEditorProps> = ({
       {/* Event tracks */}
       <div className="space-y-1">
         {session.events.map((evt) => {
-          const left = (evt.left?.frequency ?? 528);
+          const left = (evt.left?.frequency ?? BASELINE.left.frequency);
           const pct = (evt.timeMs / session.durationMs) * 100;
           return (
             <div
@@ -164,10 +166,9 @@ const TimelineEditor: React.FC<TimelineEditorProps> = ({
             <input aria-label="Left amplitude" value={editAmpL} onChange={(e) => setEditAmpL(e.target.value)} className="bg-gray-700 rounded px-2 py-1 w-16" />
             <select aria-label="Left waveform" value={editWaveL} onChange={(e) => setEditWaveL(e.target.value as Waveform | '')} className="bg-gray-700 rounded px-2 py-1">
               <option value="">(unchanged)</option>
-              <option value="sine">sine</option>
-              <option value="square">square</option>
-              <option value="triangle">triangle</option>
-              <option value="sawtooth">sawtooth</option>
+              {WAVEFORMS.map((w) => (
+                <option key={w} value={w}>{w}</option>
+              ))}
             </select>
           </div>
           <div className="flex items-center gap-2">
@@ -177,10 +178,9 @@ const TimelineEditor: React.FC<TimelineEditorProps> = ({
             <input aria-label="Right amplitude" value={editAmpR} onChange={(e) => setEditAmpR(e.target.value)} className="bg-gray-700 rounded px-2 py-1 w-16" />
             <select aria-label="Right waveform" value={editWaveR} onChange={(e) => setEditWaveR(e.target.value as Waveform | '')} className="bg-gray-700 rounded px-2 py-1">
               <option value="">(unchanged)</option>
-              <option value="sine">sine</option>
-              <option value="square">square</option>
-              <option value="triangle">triangle</option>
-              <option value="sawtooth">sawtooth</option>
+              {WAVEFORMS.map((w) => (
+                <option key={w} value={w}>{w}</option>
+              ))}
             </select>
           </div>
           <div className="flex items-center gap-2">

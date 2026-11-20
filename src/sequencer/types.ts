@@ -1,5 +1,9 @@
 export type Waveform = 'sine' | 'square' | 'triangle' | 'sawtooth';
 
+/** The complete waveform set — the single whitelist, derived from the type.
+ *  Validation and every waveform picker consume this, not re-listed copies. */
+export const WAVEFORMS: readonly Waveform[] = ['sine', 'square', 'triangle', 'sawtooth'];
+
 export interface ChannelState {
   frequency: number;
   waveform: Waveform;
