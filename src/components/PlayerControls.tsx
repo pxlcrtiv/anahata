@@ -66,8 +66,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
             onClick={onPlay}
             aria-label={isPlaying ? 'Pause tone' : 'Play tone'}
             className={`w-14 h-14 rounded-full ${
-              isPlaying 
-                ? 'bg-gray-600 hover:bg-gray-500' 
+              isPlaying
+                ? 'bg-green-600 hover:bg-green-500'
                 : 'bg-green-500 hover:bg-green-400'
             } transition-all duration-200 shadow-lg`}
           >

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { focusRing } from '@/lib/focus';
 import { serializeSession, deserializeSession } from '../sequencer/session';
 import type { Session } from '../sequencer/types';
 
@@ -49,6 +50,7 @@ const SessionPanel: React.FC<SessionPanelProps> = ({ session, onChangeSession, c
   }, [session.name]);
 
   const handleSave = () => {
+    setError('');
     const toSave = { ...session, name };
     const existing = savedList.findIndex((s) => s.id === toSave.id);
     const next = existing >= 0
@@ -60,6 +62,7 @@ const SessionPanel: React.FC<SessionPanelProps> = ({ session, onChangeSession, c
   };
 
   const handleLoad = (s: Session) => {
+    setError('');
     onChangeSession(s);
     setName(s.name);
   };
@@ -108,15 +111,15 @@ const SessionPanel: React.FC<SessionPanelProps> = ({ session, onChangeSession, c
           className="bg-gray-700 rounded px-3 py-1 text-sm flex-1"
           placeholder="Session name"
         />
-        <button onClick={handleSave} className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-sm text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400">
+        <button onClick={handleSave} className={`px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-sm text-white ${focusRing} focus-visible:ring-blue-400`}>
           Save
         </button>
-        <button onClick={handleExport} className="px-3 py-1 bg-gray-600 hover:bg-gray-500 rounded text-sm text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400">
+        <button onClick={handleExport} className={`px-3 py-1 bg-gray-600 hover:bg-gray-500 rounded text-sm text-white ${focusRing} focus-visible:ring-white`}>
           Export
         </button>
-        <label className="px-3 py-1 bg-gray-600 hover:bg-gray-500 rounded text-sm text-white cursor-pointer focus-within:focus-visible:ring-2 focus-within:focus-visible:ring-green-400">
+        <label className="px-3 py-1 bg-gray-600 hover:bg-gray-500 rounded text-sm text-white cursor-pointer focus-within:ring-2 focus-within:ring-white focus-within:ring-offset-2">
           Import
-          <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+          <input type="file" accept=".json" onChange={handleImport} className="sr-only" />
         </label>
       </div>
       <div className="flex items-center gap-2 text-sm">
@@ -137,7 +140,7 @@ const SessionPanel: React.FC<SessionPanelProps> = ({ session, onChangeSession, c
         <div className="space-y-1 max-h-40 overflow-y-auto">
           {savedList.map((s) => (
             <div key={s.id} className="flex items-center gap-2 text-sm">
-              <button onClick={() => handleLoad(s)} className="flex-1 text-left hover:text-blue-400 truncate text-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 rounded px-1">
+              <button onClick={() => handleLoad(s)} className={`flex-1 text-left hover:text-blue-400 truncate text-gray-300 rounded px-1 ${focusRing} focus-visible:ring-white`}>
                 {s.name}
               </button>
               <button onClick={() => handleDelete(s.id)} className="text-red-400 hover:text-red-300 text-xs">

@@ -104,7 +104,7 @@ const ChannelMixer: React.FC<ChannelMixerProps> = ({
               </div>
 
               <div>
-                <Label htmlFor="left-amplitude" className="text-gray-300 text-sm">Amplitude</Label>
+                <Label className="text-gray-300 text-sm">Amplitude</Label>
                 <Slider
                   value={[leftChannel.amplitude]}
                   onValueChange={(value) => onLeftChannelChange({ amplitude: value[0] })}
@@ -176,7 +176,7 @@ const ChannelMixer: React.FC<ChannelMixerProps> = ({
               </div>
 
               <div>
-                <Label htmlFor="right-amplitude" className="text-gray-300 text-sm">Amplitude</Label>
+                <Label className="text-gray-300 text-sm">Amplitude</Label>
                 <Slider
                   value={[rightChannel.amplitude]}
                   onValueChange={(value) => onRightChannelChange({ amplitude: value[0] })}

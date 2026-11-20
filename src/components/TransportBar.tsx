@@ -1,5 +1,6 @@
 import React from 'react';
 import { Circle, Square } from 'lucide-react';
+import { focusRing } from '@/lib/focus';
 
 interface TransportBarProps {
   isPlaying: boolean;
@@ -43,26 +44,26 @@ const TransportBar: React.FC<TransportBarProps> = ({
     <div className="flex items-center gap-4 p-4 bg-gray-800 rounded-lg">
       <button
         onClick={isPlaying ? onPause : onPlay}
-        className="px-4 py-2 bg-green-500 hover:bg-green-400 text-black font-bold rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400"
+        className={`px-4 py-2 bg-green-500 hover:bg-green-400 text-black font-bold rounded ${focusRing} focus-visible:ring-green-400`}
       >
         {isPlaying ? 'Pause' : 'Play'}
       </button>
       <button
         onClick={onStop}
-        className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400"
+        className={`px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded ${focusRing} focus-visible:ring-white`}
       >
         Stop
       </button>
       <button
         onClick={onToggleLoop}
-        className={`px-3 py-2 text-white rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 ${loop ? 'bg-blue-500' : 'bg-gray-600'}`}
+        className={`px-3 py-2 text-white rounded ${focusRing} focus-visible:ring-blue-400 ${loop ? 'bg-blue-500' : 'bg-gray-600'}`}
       >
         Loop
       </button>
       <button
         onClick={onToggleRecord}
         disabled={!canRecord}
-        className={`px-3 py-2 rounded font-bold inline-flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 ${
+        className={`px-3 py-2 rounded font-bold inline-flex items-center gap-1.5 ${focusRing} focus-visible:ring-white ${
           isRecording
             ? 'bg-red-500 text-white animate-pulse'
             : canRecord

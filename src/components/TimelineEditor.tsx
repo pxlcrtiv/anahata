@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Plus } from 'lucide-react';
+import { focusRing } from '@/lib/focus';
 import type { Session, SessionEvent, Waveform } from '../sequencer/types';
 
 interface TimelineEditorProps {
@@ -104,8 +106,9 @@ const TimelineEditor: React.FC<TimelineEditorProps> = ({
     <div className="bg-gray-800 rounded-lg p-4 space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-300">Timeline</h3>
-        <button onClick={handleAddEvent} className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400">
-          + Add Event
+        <button onClick={handleAddEvent} className={`px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded inline-flex items-center gap-1 ${focusRing} focus-visible:ring-white`}>
+          <Plus className="w-3.5 h-3.5" aria-hidden="true" />
+          Add Event
         </button>
       </div>
 
@@ -187,8 +190,8 @@ const TimelineEditor: React.FC<TimelineEditorProps> = ({
             <input aria-label="Ramp (ms)" value={editRampMs} onChange={(e) => setEditRampMs(e.target.value)} className="bg-gray-700 rounded px-2 py-1 w-16" />
           </div>
           <div className="flex gap-2 pt-1">
-            <button onClick={handleSaveEdit} className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400">Save</button>
-            <button onClick={handleDelete} className="px-3 py-1 bg-red-600 hover:bg-red-500 rounded text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400">Delete</button>
+            <button onClick={handleSaveEdit} className={`px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-white ${focusRing} focus-visible:ring-blue-400`}>Save</button>
+            <button onClick={handleDelete} className={`px-3 py-1 bg-red-600 hover:bg-red-500 rounded text-white ${focusRing} focus-visible:ring-red-400`}>Delete</button>
           </div>
         </div>
       )}

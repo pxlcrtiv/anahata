@@ -17,8 +17,8 @@
         "files": [
           "src/components/FrequencyPresets.tsx"
         ],
-        "createdAt": "2026-11-20T02:23:33.479Z",
-        "reason": "DESIGN.md, user-confirmed during the document flow: preset tiles carry individual content hues, not chrome — the anti-reference covers app chrome only"
+        "createdAt": "2026-11-20T02:32:44.380Z",
+        "reason": "DESIGN.md, user-confirmed at the document flow: preset tile hues are sanctioned content, not chrome. Findings carry no value token, so file scope is the narrowest granularity this rule supports; the file renders only preset tiles and their form."
       }
     ]
   }

@@ -7,6 +7,9 @@ test.describe('Anahata smoke', () => {
     await expect(page).toHaveTitle(/Anahata/);
     await expect(page.getByRole('heading', { level: 1, name: /Anahata/ })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
+
+    // Durable rendered evidence at the shipped size, uploaded by CI.
+    await page.screenshot({ path: 'test-results/anahata-load.png', fullPage: true });
   });
 
   test('Alpha Waves preset applies a true beat pair and unlinks channels', async ({ page }) => {
