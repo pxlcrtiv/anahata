@@ -16,7 +16,7 @@ const DEFAULT_SESSION: Session = {
   events: [],
 };
 
-export function useSequencer(onTick: (state: EvaluatedState) => void) {
+export function useSequencer(onTick: (state: EvaluatedState) => void, onEnd?: () => void) {
   const [session, setSession] = useState<Session>(DEFAULT_SESSION);
   const [positionMs, setPositionMs] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -28,11 +28,13 @@ export function useSequencer(onTick: (state: EvaluatedState) => void) {
   const startTimestampRef = useRef<number | null>(null);
   const startOffsetRef = useRef(0);
   const onTickRef = useRef(onTick);
+  const onEndRef = useRef(onEnd);
 
   sessionRef.current = session;
   positionRef.current = positionMs;
   isPlayingRef.current = isPlaying;
   onTickRef.current = onTick;
+  onEndRef.current = onEnd;
 
   const tick = useCallback(() => {
     if (!isPlayingRef.current) return;
@@ -47,12 +49,15 @@ export function useSequencer(onTick: (state: EvaluatedState) => void) {
       currentMs = currentMs % dur;
     } else if (currentMs >= dur) {
       currentMs = dur;
-      // Stop at end
+      // Natural end: stop the transport, keep the position ref and state
+      // in agreement, apply the final state, then emit the end transition.
       isPlayingRef.current = false;
       setIsPlaying(false);
+      positionRef.current = dur;
       setPositionMs(dur);
       const state = evaluateSession(sessionRef.current, dur);
       onTickRef.current(state);
+      onEndRef.current?.();
       return;
     }
 
@@ -67,6 +72,12 @@ export function useSequencer(onTick: (state: EvaluatedState) => void) {
 
   const play = useCallback(() => {
     if (isPlayingRef.current) return;
+    // Replaying from the end of a finished non-loop session restarts
+    // from the top instead of staying latched at the end position.
+    if (!sessionRef.current.loop && positionRef.current >= sessionRef.current.durationMs) {
+      positionRef.current = 0;
+      setPositionMs(0);
+    }
     isPlayingRef.current = true;
     setIsPlaying(true);
     startTimestampRef.current = performance.now();
