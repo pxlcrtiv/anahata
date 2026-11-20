@@ -25,9 +25,9 @@ test.describe('Anahata smoke', () => {
     await page.goto('/');
 
     await page.getByRole('button', { name: 'Play', exact: true }).click();
-    await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeVisible();
 
-    await page.getByRole('button', { name: 'Pause' }).click();
+    await page.getByRole('button', { name: 'Pause', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
   });
 
@@ -38,7 +38,7 @@ test.describe('Anahata smoke', () => {
     await page.getByLabel('Session duration (ms)').fill('3000');
 
     await page.getByRole('button', { name: 'Play', exact: true }).click();
-    await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeVisible();
 
     // The engine stops itself at 3s; the transport shows Play again.
     await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible({

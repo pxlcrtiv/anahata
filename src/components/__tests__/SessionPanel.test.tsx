@@ -49,26 +49,30 @@ describe('SessionPanel — import validation', () => {
     expect((onChangeSession.mock.calls[0][0] as Session).name).toBe('Imported');
   });
 
-  it('rejects a structurally invalid session with a visible error', async () => {
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+  it('rejects a structurally invalid session with a visible inline error', async () => {
     const onChangeSession = vi.fn();
     const { container } = renderPanel(onChangeSession);
 
     // Parses as JSON, but is not a valid session: wrong types, missing fields.
     importFile(container, JSON.stringify({ id: 'x', name: 3 }));
 
-    await vi.waitFor(() => expect(alertSpy).toHaveBeenCalled());
+    await vi.waitFor(() => {
+      const alert = screen.getByRole('alert');
+      expect(alert.textContent).toContain('Invalid session file');
+    });
     expect(onChangeSession).not.toHaveBeenCalled();
   });
 
-  it('rejects unparseable JSON with a visible error', async () => {
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+  it('rejects unparseable JSON with a visible inline error', async () => {
     const onChangeSession = vi.fn();
     const { container } = renderPanel(onChangeSession);
 
     importFile(container, 'not json at all');
 
-    await vi.waitFor(() => expect(alertSpy).toHaveBeenCalled());
+    await vi.waitFor(() => {
+      const alert = screen.getByRole('alert');
+      expect(alert.textContent).toContain('Invalid session file');
+    });
     expect(onChangeSession).not.toHaveBeenCalled();
   });
 });

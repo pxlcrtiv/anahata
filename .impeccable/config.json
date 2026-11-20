@@ -6,5 +6,20 @@
       "maxFindings": 5,
       "maxChars": 8000
     }
+  },
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "ai-color-palette",
+        "value": "*",
+        "files": [
+          "src/components/FrequencyPresets.tsx"
+        ],
+        "createdAt": "2026-11-20T02:23:33.479Z",
+        "reason": "DESIGN.md, user-confirmed during the document flow: preset tiles carry individual content hues, not chrome — the anti-reference covers app chrome only"
+      }
+    ]
   }
 }

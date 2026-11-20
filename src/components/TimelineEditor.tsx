@@ -104,7 +104,7 @@ const TimelineEditor: React.FC<TimelineEditorProps> = ({
     <div className="bg-gray-800 rounded-lg p-4 space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-300">Timeline</h3>
-        <button onClick={handleAddEvent} className="px-3 py-1 bg-green-600 hover:bg-green-500 text-white text-sm rounded">
+        <button onClick={handleAddEvent} className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400">
           + Add Event
         </button>
       </div>
@@ -136,7 +136,7 @@ const TimelineEditor: React.FC<TimelineEditorProps> = ({
               onClick={() => handleSelectEvent(evt)}
             >
               <div
-                className="absolute top-0.5 bottom-0.5 w-3 bg-blue-500 rounded text-[10px] text-white flex items-center justify-center"
+                className="absolute top-0.5 bottom-0.5 w-auto min-w-4 px-1 bg-blue-500 rounded text-xs text-white flex items-center justify-center"
                 style={{ left: `${pct}%` }}
                 title={`${evt.timeMs}ms — L:${left}Hz`}
               >
@@ -151,15 +151,15 @@ const TimelineEditor: React.FC<TimelineEditorProps> = ({
       {selected && (
         <div className="bg-gray-700 rounded p-3 space-y-2 text-sm">
           <div className="flex items-center gap-2">
-            <label className="text-gray-400 w-16">Time(ms)</label>
-            <input value={editTimeMs} onChange={(e) => setEditTimeMs(e.target.value)} className="bg-gray-600 rounded px-2 py-1 w-24" />
+            <label className="text-gray-300 w-16">Time(ms)</label>
+            <input aria-label="Event time (ms)" value={editTimeMs} onChange={(e) => setEditTimeMs(e.target.value)} className="bg-gray-700 rounded px-2 py-1 w-24" />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-gray-400 w-16">L Freq</label>
-            <input value={editFreqL} onChange={(e) => setEditFreqL(e.target.value)} className="bg-gray-600 rounded px-2 py-1 w-24" />
-            <label className="text-gray-400">Amp</label>
-            <input value={editAmpL} onChange={(e) => setEditAmpL(e.target.value)} className="bg-gray-600 rounded px-2 py-1 w-16" />
-            <select value={editWaveL} onChange={(e) => setEditWaveL(e.target.value as Waveform | '')} className="bg-gray-600 rounded px-2 py-1">
+            <label className="text-gray-300 w-16">L Freq</label>
+            <input aria-label="Left frequency" value={editFreqL} onChange={(e) => setEditFreqL(e.target.value)} className="bg-gray-700 rounded px-2 py-1 w-24" />
+            <label className="text-gray-300">Amp</label>
+            <input aria-label="Left amplitude" value={editAmpL} onChange={(e) => setEditAmpL(e.target.value)} className="bg-gray-700 rounded px-2 py-1 w-16" />
+            <select aria-label="Left waveform" value={editWaveL} onChange={(e) => setEditWaveL(e.target.value as Waveform | '')} className="bg-gray-700 rounded px-2 py-1">
               <option value="">(unchanged)</option>
               <option value="sine">sine</option>
               <option value="square">square</option>
@@ -168,11 +168,11 @@ const TimelineEditor: React.FC<TimelineEditorProps> = ({
             </select>
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-gray-400 w-16">R Freq</label>
-            <input value={editFreqR} onChange={(e) => setEditFreqR(e.target.value)} className="bg-gray-600 rounded px-2 py-1 w-24" />
-            <label className="text-gray-400">Amp</label>
-            <input value={editAmpR} onChange={(e) => setEditAmpR(e.target.value)} className="bg-gray-600 rounded px-2 py-1 w-16" />
-            <select value={editWaveR} onChange={(e) => setEditWaveR(e.target.value as Waveform | '')} className="bg-gray-600 rounded px-2 py-1">
+            <label className="text-gray-300 w-16">R Freq</label>
+            <input aria-label="Right frequency" value={editFreqR} onChange={(e) => setEditFreqR(e.target.value)} className="bg-gray-700 rounded px-2 py-1 w-24" />
+            <label className="text-gray-300">Amp</label>
+            <input aria-label="Right amplitude" value={editAmpR} onChange={(e) => setEditAmpR(e.target.value)} className="bg-gray-700 rounded px-2 py-1 w-16" />
+            <select aria-label="Right waveform" value={editWaveR} onChange={(e) => setEditWaveR(e.target.value as Waveform | '')} className="bg-gray-700 rounded px-2 py-1">
               <option value="">(unchanged)</option>
               <option value="sine">sine</option>
               <option value="square">square</option>
@@ -181,14 +181,14 @@ const TimelineEditor: React.FC<TimelineEditorProps> = ({
             </select>
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-gray-400 w-16">Master</label>
-            <input value={editMasterVol} onChange={(e) => setEditMasterVol(e.target.value)} className="bg-gray-600 rounded px-2 py-1 w-16" />
-            <label className="text-gray-400">Ramp(ms)</label>
-            <input value={editRampMs} onChange={(e) => setEditRampMs(e.target.value)} className="bg-gray-600 rounded px-2 py-1 w-16" />
+            <label className="text-gray-300 w-16">Master</label>
+            <input aria-label="Master volume" value={editMasterVol} onChange={(e) => setEditMasterVol(e.target.value)} className="bg-gray-700 rounded px-2 py-1 w-16" />
+            <label className="text-gray-300">Ramp(ms)</label>
+            <input aria-label="Ramp (ms)" value={editRampMs} onChange={(e) => setEditRampMs(e.target.value)} className="bg-gray-700 rounded px-2 py-1 w-16" />
           </div>
           <div className="flex gap-2 pt-1">
-            <button onClick={handleSaveEdit} className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-white">Save</button>
-            <button onClick={handleDelete} className="px-3 py-1 bg-red-600 hover:bg-red-500 rounded text-white">Delete</button>
+            <button onClick={handleSaveEdit} className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400">Save</button>
+            <button onClick={handleDelete} className="px-3 py-1 bg-red-600 hover:bg-red-500 rounded text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400">Delete</button>
           </div>
         </div>
       )}

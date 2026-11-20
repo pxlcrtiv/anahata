@@ -56,6 +56,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
             disabled={!isPlaying}
             variant="ghost"
             size="sm"
+            aria-label="Stop tone"
             className="text-gray-400 hover:text-white disabled:opacity-30"
           >
             <Square className="w-5 h-5" />
@@ -63,6 +64,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
           
           <Button
             onClick={onPlay}
+            aria-label={isPlaying ? 'Pause tone' : 'Play tone'}
             className={`w-14 h-14 rounded-full ${
               isPlaying 
                 ? 'bg-gray-600 hover:bg-gray-500' 
@@ -80,6 +82,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
             onClick={onExport}
             variant="ghost"
             size="sm"
+            aria-label="Download session WAV"
             className="text-gray-400 hover:text-white"
           >
             <Download className="w-5 h-5" />
@@ -110,6 +113,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
             max={1}
             min={0}
             step={0.01}
+            aria-label="Master volume"
             className="flex-1"
           />
           <span className="text-gray-400 text-sm min-w-[3rem]">
