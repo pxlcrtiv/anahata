@@ -13,25 +13,30 @@ interface SessionPanelProps {
 
 const STORAGE_KEY = 'anahata.sessions';
 
-const loadSessions = (): Session[] => {
+const loadSessions = (): { sessions: Session[]; skipped: number } => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
+    if (!raw) return { sessions: [], skipped: 0 };
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    // Each saved entry is a serialized session; corrupt entries are skipped.
-    return parsed
-      .filter((entry): entry is string => typeof entry === 'string')
-      .map((entry) => {
-        try {
-          return deserializeSession(entry);
-        } catch {
-          return null;
-        }
-      })
-      .filter((session): session is Session => session !== null);
+    if (!Array.isArray(parsed)) return { sessions: [], skipped: 0 };
+    // Each saved entry is a serialized session; corrupt entries are
+    // counted so the UI can say so instead of dropping them silently.
+    const sessions: Session[] = [];
+    let skipped = 0;
+    for (const entry of parsed) {
+      if (typeof entry !== 'string') {
+        skipped += 1;
+        continue;
+      }
+      try {
+        sessions.push(deserializeSession(entry));
+      } catch {
+        skipped += 1;
+      }
+    }
+    return { sessions, skipped };
   } catch {
-    return [];
+    return { sessions: [], skipped: 0 };
   }
 };
 
@@ -41,7 +46,7 @@ const saveSessions = (sessions: Session[]) => {
 
 const SessionPanel: React.FC<SessionPanelProps> = ({ session, onChangeSession, crossfadeMs, onCrossfadeMsChange }) => {
   const [name, setName] = useState(session.name);
-  const [savedList, setSavedList] = useState<Session[]>(loadSessions);
+  const [saved, setSaved] = useState(loadSessions);
   const [error, setError] = useState('');
 
   // Track the session identity as it changes (restore on mount, load, import).
@@ -53,12 +58,12 @@ const SessionPanel: React.FC<SessionPanelProps> = ({ session, onChangeSession, c
   const handleSave = () => {
     setError('');
     const toSave = { ...session, name };
-    const existing = savedList.findIndex((s) => s.id === toSave.id);
+    const existing = saved.sessions.findIndex((s) => s.id === toSave.id);
     const next = existing >= 0
-      ? savedList.map((s, i) => (i === existing ? toSave : s))
-      : [...savedList, toSave];
+      ? saved.sessions.map((s, i) => (i === existing ? toSave : s))
+      : [...saved.sessions, toSave];
     saveSessions(next);
-    setSavedList(next);
+    setSaved({ sessions: next, skipped: saved.skipped });
     onChangeSession(toSave);
   };
 
@@ -69,13 +74,14 @@ const SessionPanel: React.FC<SessionPanelProps> = ({ session, onChangeSession, c
   };
 
   const handleDelete = (id: string) => {
-    const next = savedList.filter((s) => s.id !== id);
+    const next = saved.sessions.filter((s) => s.id !== id);
     saveSessions(next);
-    setSavedList(next);
+    setSaved({ sessions: next, skipped: saved.skipped });
   };
 
   const handleExport = () => {
-    const blob = new Blob([JSON.stringify(session, null, 2)], { type: 'application/json' });
+    // Routed through the canonical serializer, then pretty-printed for humans.
+    const blob = new Blob([JSON.stringify(JSON.parse(serializeSession(session)), null, 2)], { type: 'application/json' });
     downloadBlob(blob, `${session.name || 'session'}.json`);
   };
 
@@ -132,9 +138,14 @@ const SessionPanel: React.FC<SessionPanelProps> = ({ session, onChangeSession, c
         <span className="text-gray-500">ms</span>
       </div>
       {error && <p className="text-red-400 text-xs" role="alert">{error}</p>}
-      {savedList.length > 0 && (
+      {saved.skipped > 0 && (
+        <p className="text-amber-400 text-xs" role="status">
+          {saved.skipped} saved {saved.skipped === 1 ? 'entry was' : 'entries were'} invalid and skipped
+        </p>
+      )}
+      {saved.sessions.length > 0 && (
         <div className="space-y-1 max-h-40 overflow-y-auto">
-          {savedList.map((s) => (
+          {saved.sessions.map((s) => (
             <div key={s.id} className="flex items-center gap-2 text-sm">
               <button onClick={() => handleLoad(s)} className={`flex-1 text-left hover:text-blue-400 truncate text-gray-300 rounded px-1 ${focusRing} focus-visible:ring-white`}>
                 {s.name}

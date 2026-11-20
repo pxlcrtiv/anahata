@@ -11,8 +11,8 @@ import SessionPanel from './SessionPanel';
 import Wordmark from './Wordmark';
 import { DEFAULT_CROSSFADE_MS } from '../sequencer/crossfade';
 import { BASELINE } from '../sequencer/evaluate';
-import { renderSessionToStereo, interleaveStereo } from '../audio/renderSession';
-import { encodeWAV } from '../audio/wavEncoder';
+import { renderSessionToStereo } from '../audio/renderSession';
+import { encodeStereoBlob } from '../audio/wavEncoder';
 import { downloadBlob } from '../audio/downloadBlob';
 import { useToast } from '@/hooks/use-toast';
 import { loadAutosave, saveAutosave } from '../storage/sessionStorage';
@@ -180,9 +180,7 @@ const WaveGenerator = () => {
   const handleExport = () => {
     try {
       const rendered = renderSessionToStereo(session, 44100);
-      const interleaved = interleaveStereo(rendered.left, rendered.right);
-      const wav = encodeWAV(interleaved, 2, rendered.sampleRate);
-      const blob = new Blob([wav], { type: 'audio/wav' });
+      const blob = encodeStereoBlob(rendered.left, rendered.right, rendered.sampleRate);
       downloadBlob(blob, `anahata-${(session.name || 'session').replace(/\s+/g, '-').toLowerCase()}-${(session.durationMs / 1000).toFixed(1)}s.wav`);
       toast({
         title: 'Export complete',

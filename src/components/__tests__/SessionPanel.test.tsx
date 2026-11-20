@@ -103,6 +103,18 @@ describe('SessionPanel — import validation', () => {
 describe('SessionPanel — saved-list storage', () => {
   beforeEach(() => localStorage.clear());
 
+  it('surfaces a visible note when corrupt saved entries are skipped', () => {
+    const valid = JSON.stringify({ id: 'ok', name: 'Valid', durationMs: 1000, loop: false, events: [] });
+    localStorage.setItem('anahata.sessions', JSON.stringify([valid, '{corrupt']));
+
+    renderPanel();
+
+    const note = screen.getByRole('status');
+    expect(note.textContent).toContain('1 saved entry was invalid and skipped');
+    // The valid entry still loads.
+    expect(screen.getByText('Valid')).toBeTruthy();
+  });
+
   it('saves through the serializer and lists the session on a fresh render', () => {
     renderPanel();
     fireEvent.click(screen.getByText('Save'));

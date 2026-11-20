@@ -56,7 +56,7 @@ const TransportBar: React.FC<TransportBarProps> = ({
       </button>
       <button
         onClick={onToggleLoop}
-        className={`px-3 py-2 text-white rounded ${focusRing} focus-visible:ring-blue-400 ${loop ? 'bg-blue-500' : 'bg-gray-600'}`}
+        className={`px-3 py-2 rounded ${focusRing} focus-visible:ring-blue-400 ${loop ? 'bg-blue-500 text-black' : 'bg-gray-600 text-white'}`}
       >
         Loop
       </button>
@@ -65,7 +65,7 @@ const TransportBar: React.FC<TransportBarProps> = ({
         disabled={!canRecord}
         className={`px-3 py-2 rounded font-bold inline-flex items-center gap-1.5 ${focusRing} focus-visible:ring-white ${
           isRecording
-            ? 'bg-red-500 text-white animate-pulse'
+            ? 'bg-red-500 text-black animate-pulse'
             : canRecord
             ? 'bg-gray-600 hover:bg-gray-500 text-white'
             : 'bg-gray-700 text-gray-500 cursor-not-allowed'

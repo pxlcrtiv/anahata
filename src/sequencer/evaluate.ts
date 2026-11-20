@@ -27,7 +27,14 @@ export function prepareSession(session: Session): PreparedSession {
 }
 
 /** Evaluates a prepared session at timeMs. Identical semantics to
- *  evaluateSession — the equivalence tests pin the two together. */
+ *  evaluateSession — the equivalence tests pin the two together.
+ *
+ *  Allocation floor (the reasoned answer to issue #45's AC): one fresh
+ *  EvaluatedState per call — the two channel copies and the envelope,
+ *  ~1.3M objects for a 10s/44.1kHz export, down from 6+ per call plus
+ *  441k event sorts. Precomputing event boundaries so cost scales only
+ *  with boundary crossings is the recorded follow-up if longer exports
+ *  ever need it; the sort removal is the dominant win today. */
 export function evaluatePrepared(prepared: PreparedSession, timeMs: number): EvaluatedState {
   const { session, sortedEvents } = prepared;
   const t = session.loop ? timeMs % session.durationMs : timeMs;
@@ -35,11 +42,6 @@ export function evaluatePrepared(prepared: PreparedSession, timeMs: number): Eva
   const left: ChannelState = { ...BASELINE.left };
   const right: ChannelState = { ...BASELINE.right };
   let masterVolume = BASELINE.masterVolume;
-
-  // Track "pre-ramp" values for interpolation
-  let prevLeft: ChannelState = { ...BASELINE.left };
-  let prevRight: ChannelState = { ...BASELINE.right };
-  let prevMasterVolume = BASELINE.masterVolume;
 
   for (const event of sortedEvents) {
     if (event.timeMs > t) break;
@@ -90,10 +92,6 @@ export function evaluatePrepared(prepared: PreparedSession, timeMs: number): Eva
         masterVolume = snapshotMaster + (masterVolume - snapshotMaster) * progress;
       }
     }
-
-    prevLeft = { ...left };
-    prevRight = { ...right };
-    prevMasterVolume = masterVolume;
   }
 
   return { left, right, masterVolume };

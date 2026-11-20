@@ -1,6 +1,5 @@
 import { useRef, useCallback, useState } from 'react';
-import { encodeWAV } from './wavEncoder';
-import { interleaveStereo } from './renderSession';
+import { encodeStereoBlob } from './wavEncoder';
 
 /**
  * A tap factory routes an on-process handler off the master bus (the
@@ -32,7 +31,7 @@ export function createRecorder(createTap: TapFactory) {
       if (leftChunks.length === 0) return null;
 
       // Concatenate chunks (lengths may differ — the last chunk is often
-      // short), then interleave through the shared helper.
+      // short), then hand the channels to the shared WAV-Blob builder.
       const frames = leftChunks.reduce((n, chunk) => n + chunk.length, 0);
       const left = new Float32Array(frames);
       const right = new Float32Array(frames);
@@ -43,11 +42,9 @@ export function createRecorder(createTap: TapFactory) {
         offset += leftChunks[i].length;
       }
 
-      const interleaved = interleaveStereo(left, right);
-      const wav = encodeWAV(interleaved, 2, sampleRate);
       leftChunks.length = 0;
       rightChunks.length = 0;
-      return new Blob([wav], { type: 'audio/wav' });
+      return encodeStereoBlob(left, right, sampleRate);
     },
   };
 }

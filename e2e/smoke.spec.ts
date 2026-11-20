@@ -16,6 +16,21 @@ test.describe('Anahata smoke', () => {
     await page.screenshot({ path: 'test-results/landing-load.png', fullPage: true });
   });
 
+  test('PWA manifest and icons are installable', async ({ page, request }) => {
+    const res = await request.get('/manifest.webmanifest');
+    expect(res.ok()).toBeTruthy();
+    const manifest = await res.json();
+    expect(manifest.display).toBe('standalone');
+    expect(Array.isArray(manifest.icons)).toBe(true);
+    expect(manifest.icons.length).toBeGreaterThan(0);
+
+    // Every declared icon must actually resolve.
+    for (const icon of manifest.icons) {
+      const iconRes = await request.get(icon.src);
+      expect(iconRes.ok(), `${icon.src} should resolve`).toBeTruthy();
+    }
+  });
+
   test('404 stays on the instrument chassis and links back', async ({ page }) => {
     await page.goto('/definitely-not-a-route');
 

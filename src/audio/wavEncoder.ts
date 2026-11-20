@@ -53,3 +53,19 @@ export function encodeWAV(
 
   return buffer;
 }
+
+/** Interleaves left/right sample arrays into one L,R,L,R,… array. */
+export function interleaveStereo(left: Float32Array, right: Float32Array): Float32Array {
+  const out = new Float32Array(left.length * 2);
+  for (let i = 0; i < left.length; i++) {
+    out[i * 2] = left[i];
+    out[i * 2 + 1] = right[i];
+  }
+  return out;
+}
+
+/** The one WAV-Blob builder: interleave → 16-bit PCM → Blob. Every
+ *  export path (session WAV, recording) goes through here. */
+export function encodeStereoBlob(left: Float32Array, right: Float32Array, sampleRate: number): Blob {
+  return new Blob([encodeWAV(interleaveStereo(left, right), 2, sampleRate)], { type: 'audio/wav' });
+}
