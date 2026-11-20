@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
+import { render, renderHook, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import WaveGenerator from '../WaveGenerator';
+import { useTransport } from '../../transport/useTransport';
 import { saveAutosave } from '../../storage/sessionStorage';
 
 // The audio engine and recorder are the browser seam — mock them so the
@@ -21,7 +22,7 @@ vi.mock('../../hooks/useAudioEngine', () => ({
 }));
 
 // Recording state varies per test — hoisted so the mock factory can read it.
-const mock = vi.hoisted(() => ({ isRecording: false }));
+const recordingState = vi.hoisted(() => ({ isRecording: false }));
 const startRecording = vi.fn();
 const stopRecording = vi.fn();
 
@@ -29,7 +30,7 @@ vi.mock('../../audio/recording', () => ({
   useRecording: () => ({
     startRecording,
     stopRecording,
-    isRecording: mock.isRecording,
+    isRecording: recordingState.isRecording,
   }),
 }));
 
@@ -37,7 +38,7 @@ afterEach(() => {
   cleanup();
   localStorage.clear();
   vi.restoreAllMocks();
-  mock.isRecording = false;
+  recordingState.isRecording = false;
 });
 
 let now: number;
@@ -63,7 +64,7 @@ describe('WaveGenerator transport — integration (engine mocked)', () => {
     vi.spyOn(globalThis, 'cancelAnimationFrame').mockImplementation(() => {});
     vi.spyOn(performance, 'now').mockImplementation(() => now);
     vi.clearAllMocks();
-    mock.isRecording = false;
+    recordingState.isRecording = false;
   });
 
   afterEach(() => {
@@ -126,7 +127,7 @@ describe('WaveGenerator transport — integration (engine mocked)', () => {
   });
 
   it('Stop during sequencer playback halts the sequencer, the engine, and the recorder', () => {
-    mock.isRecording = true;
+    recordingState.isRecording = true;
     render(<WaveGenerator />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Play', exact: true }));
@@ -209,5 +210,122 @@ describe('WaveGenerator transport — integration (engine mocked)', () => {
     });
 
     expect(screen.getAllByText(/L: 300Hz/).length).toBeGreaterThan(0);
+  });
+
+  // ---- the manual half of the transport (coverage gap flagged in review) ----
+
+  it('player card starts the engine in manual mode', async () => {
+    render(<WaveGenerator />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Play tone' }));
+    });
+
+    expect(startAudio).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'Pause tone' })).toBeTruthy();
+  });
+
+  it('manual edits reach the engine while in manual mode', async () => {
+    const { container } = render(<WaveGenerator />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Play tone' }));
+    });
+    expect(startAudio).toHaveBeenCalledTimes(1);
+
+    fireEvent.change(container.querySelector('#left-frequency') as HTMLInputElement, {
+      target: { value: '300' },
+    });
+
+    expect(applyState).toHaveBeenCalled();
+  });
+
+  it('manual pause stops the engine and returns the card to Play tone', async () => {
+    render(<WaveGenerator />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Play tone' }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Pause tone' }));
+    });
+
+    expect(stopAudio).toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Play tone' })).toBeTruthy();
+  });
+
+  it('playManual takes the engine from a live sequencer — one writer always', async () => {
+    const { result } = renderHook(() => useTransport());
+
+    act(() => {
+      result.current.play();
+    });
+    act(() => {
+      fireFrame(16);
+    });
+    expect(startAudio).toHaveBeenCalledTimes(1);
+    expect(result.current.sequencerPlaying).toBe(true);
+
+    await act(async () => {
+      await result.current.playManual({
+        left: { frequency: 440, waveform: 'sine', amplitude: 0.5 },
+        right: { frequency: 440, waveform: 'sine', amplitude: 0.5 },
+        masterVolume: 0.7,
+      });
+    });
+
+    // The sequencer yielded the engine before manual play took it.
+    expect(result.current.sequencerPlaying).toBe(false);
+    expect(startAudio).toHaveBeenCalledTimes(2);
+    expect(result.current.engineLive).toBe(true);
+  });
+
+  it('replay does not flash the previous run state before the first tick', () => {
+    saveAutosave({
+      session: {
+        id: 's',
+        name: 'T',
+        durationMs: 10000,
+        loop: false,
+        events: [{ id: 'e1', timeMs: 0, left: { frequency: 300 } }],
+      },
+      settings: {
+        left: { frequency: 528, waveform: 'sine', amplitude: 0.5 },
+        right: { frequency: 528, waveform: 'sine', amplitude: 0.5 },
+        linked: true,
+        masterVolume: 0.7,
+        crossfadeMs: 250,
+      },
+    });
+
+    render(<WaveGenerator />);
+    fireEvent.click(screen.getByRole('button', { name: 'Play', exact: true }));
+    act(() => {
+      fireFrame(16);
+    });
+    expect(screen.getAllByText(/L: 300Hz/).length).toBeGreaterThan(0);
+
+    // Pause: display falls back to the manual settings.
+    fireEvent.click(screen.getByRole('button', { name: 'Pause', exact: true }));
+    expect(screen.getAllByText(/L: 528Hz/).length).toBeGreaterThan(0);
+
+    // Replay — before any tick runs, the display must NOT resurrect the
+    // previous run's 300 Hz; it shows manual settings until a tick sounds.
+    fireEvent.click(screen.getByRole('button', { name: 'Play', exact: true }));
+    expect(screen.queryAllByText(/L: 300Hz/).length).toBe(0);
+    expect(screen.getAllByText(/L: 528Hz/).length).toBeGreaterThan(0);
+  });
+
+  it('a failing engine start logs an error instead of rejecting unhandled', async () => {
+    startAudio.mockRejectedValueOnce(new Error('resume failed'));
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    render(<WaveGenerator />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Play tone' }));
+    });
+
+    expect(consoleError).toHaveBeenCalledWith('Failed to start audio:', expect.any(Error));
+    expect(screen.getByRole('button', { name: 'Play tone' })).toBeTruthy();
   });
 });

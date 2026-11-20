@@ -4,7 +4,7 @@ import { useSequencer } from '../hooks/useSequencer';
 import { useRecording } from '../audio/recording';
 import { interpolateState, DEFAULT_CROSSFADE_MS } from '../sequencer/crossfade';
 import { evaluateSession } from '../sequencer/evaluate';
-import type { Session, EvaluatedState, ChannelState } from '../sequencer/types';
+import type { Session, EvaluatedState } from '../sequencer/types';
 
 /**
  * The transport — the single owner of play state, engine lifecycle, recorder
@@ -18,12 +18,6 @@ import type { Session, EvaluatedState, ChannelState } from '../sequencer/types';
  */
 
 type Mode = 'idle' | 'manual' | 'sequencer';
-
-export interface ManualConfig {
-  left: ChannelState;
-  right: ChannelState;
-  masterVolume: number;
-}
 
 export function useTransport() {
   const { startAudio, stopAudio, applyState, getWaveformData, getAudioContext, getMasterGain } = useAudioEngine();
@@ -46,6 +40,18 @@ export function useTransport() {
     if (isRecording) stopRecording();
   }, [isRecording, stopRecording]);
 
+  /** The shared teardown every path out of a live state runs through —
+   *  latch, crossfade, mode, remembered tick state, engine, and the live
+   *  lamp all reset together so the stop paths cannot drift apart. */
+  const resetToIdle = useCallback(() => {
+    latchRef.current = false;
+    crossfadeRef.current = null;
+    modeRef.current = 'idle';
+    lastTickStateRef.current = null;
+    stopAudio();
+    setEngineLive(false);
+  }, [stopAudio]);
+
   // The sequencer's tick — the only sequencer → engine writer.
   const handleTick = useCallback(
     (state: EvaluatedState) => {
@@ -59,7 +65,6 @@ export function useTransport() {
       }
 
       lastTickStateRef.current = effectiveState;
-      modeRef.current = 'sequencer';
 
       if (!latchRef.current) {
         startAudio({
@@ -78,38 +83,39 @@ export function useTransport() {
 
   // Natural end of a non-loop session: stop everything this transport owns.
   const handleEnd = useCallback(() => {
-    latchRef.current = false;
-    crossfadeRef.current = null;
-    modeRef.current = 'idle';
-    stopAudio();
-    setEngineLive(false);
+    resetToIdle();
     stopRecordingIfRolling();
-  }, [stopAudio, stopRecordingIfRolling]);
+  }, [resetToIdle, stopRecordingIfRolling]);
 
   const sequencer = useSequencer(handleTick, handleEnd);
 
   // ---- manual mode ----
 
   const playManual = useCallback(
-    async (config: ManualConfig) => {
+    async (config: EvaluatedState) => {
       if (modeRef.current === 'sequencer') {
         // Manual play takes the engine: pause the sequencer first (one writer).
         sequencer.pause();
         latchRef.current = false;
         crossfadeRef.current = null;
+        lastTickStateRef.current = null;
       }
-      await startAudio(config);
+      // Mark intent before awaiting so edits during startup are gated correctly.
       modeRef.current = 'manual';
-      setEngineLive(true);
+      try {
+        await startAudio(config);
+        setEngineLive(true);
+      } catch (error) {
+        console.error('Failed to start audio:', error);
+        resetToIdle();
+      }
     },
-    [startAudio, sequencer.pause],
+    [startAudio, sequencer.pause, resetToIdle],
   );
 
   const pauseManual = useCallback(() => {
-    stopAudio();
-    modeRef.current = 'idle';
-    setEngineLive(false);
-  }, [stopAudio]);
+    resetToIdle();
+  }, [resetToIdle]);
 
   /** Manual parameter writes are gated to manual mode — the sequencer owns
    *  the engine while it plays, so a mixer edit can never be written and
@@ -131,29 +137,21 @@ export function useTransport() {
     }
     modeRef.current = 'sequencer';
     latchRef.current = false; // a fresh start begins on the first tick
+    lastTickStateRef.current = null; // and remembers nothing of the last run
     sequencer.play();
-    setEngineLive(true);
   }, [sequencer.play, stopAudio]);
 
   const pauseSequencer = useCallback(() => {
     sequencer.pause();
-    latchRef.current = false;
-    crossfadeRef.current = null;
-    modeRef.current = 'idle';
-    stopAudio();
-    setEngineLive(false);
-  }, [sequencer.pause, stopAudio]);
+    resetToIdle();
+  }, [sequencer.pause, resetToIdle]);
 
   /** The one stop: sequencer, engine, and recorder together. */
   const stopTransport = useCallback(() => {
     sequencer.stop();
-    latchRef.current = false;
-    crossfadeRef.current = null;
-    modeRef.current = 'idle';
-    stopAudio();
-    setEngineLive(false);
+    resetToIdle();
     stopRecordingIfRolling();
-  }, [sequencer.stop, stopAudio, stopRecordingIfRolling]);
+  }, [sequencer.stop, resetToIdle, stopRecordingIfRolling]);
 
   // ---- session edits (the crossfade machine lives here too) ----
 
@@ -190,6 +188,9 @@ export function useTransport() {
 
   // ---- display: what is actually sounding ----
 
+  /** Reads transport refs deliberately: re-renders arrive via positionMs
+   *  (every sequencer tick) and engineLive, so these values are fresh when
+   *  called during render. Non-reactive by design — not a pure getter. */
   const getDisplayState = useCallback((fallback: EvaluatedState): EvaluatedState => {
     if (modeRef.current === 'sequencer' && lastTickStateRef.current) {
       return lastTickStateRef.current;
